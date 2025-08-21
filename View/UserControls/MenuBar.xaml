@@ -1,0 +1,46 @@
+﻿<UserControl x:Class="DoWell.View.UserControls.MenuBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:UserControls="clr-namespace:DoWell.View.UserControls"
+
+             mc:Ignorable="d" 
+             Height="70" d:DesignWidth="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+        <Menu DockPanel.Dock="Top" Background="#F8F8F8" BorderBrush="#CCCCCC" BorderThickness="0,0,0,1">
+            <MenuItem Header="_Bestand">
+                <MenuItem Header="_Nieuw" Command="{Binding NewWorkbookCommand}" InputGestureText="Ctrl+N"/>
+                <MenuItem Header="_Openen..." Command="{Binding OpenWorkbookCommand}" InputGestureText="Ctrl+O"/>
+                <MenuItem Header="_Opslaan" Command="{Binding SaveWorkbookCommand}" InputGestureText="Ctrl+S"/>
+                <MenuItem Header="Opslaan _als..." Command="{Binding SaveAsWorkbookCommand}"/>
+                <Separator/>
+                <MenuItem Header="_Afsluiten" Command="{Binding ExitCommand}" InputGestureText="Alt+F4"/>
+            </MenuItem>
+
+            <MenuItem Header="_Bewerken">
+                <MenuItem Header="_Kopiëren" Command="{Binding CopyCommand}" InputGestureText="Ctrl+C"/>
+                <MenuItem Header="_Plakken" Command="{Binding PasteCommand}" InputGestureText="Ctrl+V"/>
+                <Separator/>
+                <MenuItem Header="Rij _invoegen" Command="{Binding InsertRowCommand}"/>
+                <MenuItem Header="Kolom i_nvoegen" Command="{Binding InsertColumnCommand}"/>
+                <MenuItem Header="Rij ver_wijderen" Command="{Binding DeleteRowCommand}"/>
+                <MenuItem Header="Kolom verw_ijderen" Command="{Binding DeleteColumnCommand}"/>
+            </MenuItem>
+
+            <MenuItem Header="_Werkblad">
+                <MenuItem Header="_Nieuw werkblad" Command="{Binding AddWorksheetCommand}"/>
+                <MenuItem Header="Werkblad _hernoemen" Command="{Binding RenameWorksheetCommand}"/>
+                <MenuItem Header="Werkblad _verwijderen" Command="{Binding DeleteWorksheetCommand}"/>
+            </MenuItem>
+
+            <MenuItem Header="_Help">
+                <MenuItem Header="_Over Excel Clone..." Command="{Binding AboutCommand}"/>
+            </MenuItem>
+        </Menu>
+    </Grid>
+</UserControl>
