@@ -8,11 +8,11 @@
         mc:Ignorable="d"
         Title="DoWell - Excel Clone" Height="700" Width="1200"
         WindowStartupLocation="CenterScreen">
-
+    
     <Window.DataContext>
         <vm:MainViewModel/>
     </Window.DataContext>
-
+    
     <Window.Resources>
         <!-- Style for buttons -->
         <Style x:Key="ToolbarButtonStyle" TargetType="Button">
@@ -32,7 +32,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-
+        
         <!-- Style for DataGrid cells -->
         <Style x:Key="CellStyle" TargetType="DataGridCell">
             <Setter Property="BorderThickness" Value="0.5"/>
@@ -45,7 +45,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-
+        
         <!-- Style for TabItems -->
         <Style x:Key="TabItemStyle" TargetType="TabItem">
             <Setter Property="Template">
@@ -70,7 +70,7 @@
             </Setter>
         </Style>
     </Window.Resources>
-
+    
     <DockPanel>
         <!-- Menu Bar -->
         <Menu DockPanel.Dock="Top">
@@ -95,7 +95,7 @@
                 <MenuItem Header="_Quick Guide" Click="Guide_Click"/>
             </MenuItem>
         </Menu>
-
+        
         <!-- Toolbar -->
         <ToolBar DockPanel.Dock="Top" Height="40">
             <Button Content="➕ Row" Command="{Binding AddRowCommand}" 
@@ -114,13 +114,16 @@
             <Separator/>
             <ToggleButton x:Name="BoldButton" Content="B" FontWeight="Bold" 
                          Margin="2" Padding="8,5" Width="30"
-                         ToolTip="Make text bold (Ctrl+B)"/>
+                         ToolTip="Make text bold (Ctrl+B)"
+                         Click="BoldButton_Click"/>
             <ToggleButton x:Name="ItalicButton" Content="I" FontStyle="Italic" 
                          Margin="2" Padding="8,5" Width="30"
-                         ToolTip="Make text italic (Ctrl+I)"/>
+                         ToolTip="Make text italic (Ctrl+I)"
+                         Click="ItalicButton_Click"/>
             <ToggleButton x:Name="UnderlineButton" 
                          Margin="2" Padding="8,5" Width="30"
-                         ToolTip="Underline text (Ctrl+U)">
+                         ToolTip="Underline text (Ctrl+U)"
+                         Click="UnderlineButton_Click">
                 <TextBlock Text="U" TextDecorations="Underline"/>
             </ToggleButton>
             <Separator/>
@@ -131,7 +134,7 @@
                    Margin="2" Padding="8,5"
                    ToolTip="Search in cells"/>
         </ToolBar>
-
+        
         <!-- Formula Bar -->
         <Grid DockPanel.Dock="Top" Height="30" Background="#F5F5F5">
             <Grid.ColumnDefinitions>
@@ -143,7 +146,7 @@
                     Text="{Binding SelectedCell.Value, UpdateSourceTrigger=PropertyChanged}"
                     VerticalAlignment="Center"/>
         </Grid>
-
+        
         <!-- Status Bar -->
         <StatusBar DockPanel.Dock="Bottom" Height="25">
             <StatusBarItem>
@@ -158,13 +161,13 @@
                 <TextBlock Text="{Binding SelectedWorksheet.Name, StringFormat='Current Sheet: {0}'}"/>
             </StatusBarItem>
         </StatusBar>
-
+        
         <!-- Main Content -->
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-
+            
             <TabControl>
                 <TabItem Header="Spreadsheet" Style="{StaticResource TabItemStyle}">
                     <Grid>
@@ -173,7 +176,7 @@
                             <ColumnDefinition Width="5"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-
+                        
                         <!-- Worksheet List -->
                         <GroupBox Grid.Column="0" Header="Worksheets" Margin="5">
                             <ListBox ItemsSource="{Binding Worksheets}" 
@@ -188,10 +191,10 @@
                                 </ListBox.ContextMenu>
                             </ListBox>
                         </GroupBox>
-
+                        
                         <!-- GridSplitter -->
                         <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"/>
-
+                        
                         <!-- Main DataGrid -->
                         <Border Grid.Column="2" Margin="5" BorderBrush="#E0E0E0" BorderThickness="1">
                             <ScrollViewer HorizontalScrollBarVisibility="Auto" 
@@ -221,14 +224,14 @@
                         </Border>
                     </Grid>
                 </TabItem>
-
+                
                 <TabItem Header="Data Management" Style="{StaticResource TabItemStyle}">
                     <Grid Margin="10">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-
+                        
                         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
                             <Label Content="Select Table:"/>
                             <ComboBox x:Name="TableSelector" Width="150" Margin="5,0">
@@ -239,27 +242,27 @@
                             </ComboBox>
                             <Button Content="Refresh" Margin="5,0" Padding="10,5" Click="RefreshData_Click"/>
                         </StackPanel>
-
+                        
                         <DataGrid Grid.Row="1" x:Name="ManagementGrid" 
                                 AutoGenerateColumns="True"
                                 CanUserAddRows="True"
                                 CanUserDeleteRows="True"/>
                     </Grid>
                 </TabItem>
-
+                
                 <TabItem Header="Users" Style="{StaticResource TabItemStyle}">
                     <Grid Margin="10">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-
+                        
                         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
                             <Label Content="Filter by Username:"/>
                             <TextBox x:Name="UserFilter" Width="150" Margin="5,0"/>
                             <Button Content="Filter" Margin="5,0" Padding="10,5" Click="FilterUsers_Click"/>
                         </StackPanel>
-
+                        
                         <DataGrid Grid.Row="1" x:Name="UsersGrid" 
                                 AutoGenerateColumns="False">
                             <DataGrid.Columns>

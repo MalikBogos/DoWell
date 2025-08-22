@@ -15,8 +15,8 @@ namespace DoWell
 {
     public partial class MainWindow : Window
     {
-        private MainViewModel _viewModel;
-        private DoWellContext _context;
+        private MainViewModel _viewModel = null!;
+        private DoWellContext _context = null!;
 
         public MainWindow()
         {
@@ -168,9 +168,9 @@ namespace DoWell
                         _viewModel.SelectedCell = _viewModel.GridData[rowIndex][colIndex];
 
                         // Update formatting buttons
-                        BoldButton.IsChecked = _viewModel.SelectedCell.IsBold;
-                        ItalicButton.IsChecked = _viewModel.SelectedCell.IsItalic;
-                        UnderlineButton.IsChecked = _viewModel.SelectedCell.IsUnderline;
+                        BoldButton.IsChecked = _viewModel.SelectedCell?.IsBold ?? false;
+                        ItalicButton.IsChecked = _viewModel.SelectedCell?.IsItalic ?? false;
+                        UnderlineButton.IsChecked = _viewModel.SelectedCell?.IsUnderline ?? false;
                     }
                 }
             }
@@ -221,6 +221,11 @@ namespace DoWell
                 BoldButton.IsChecked = _viewModel.SelectedCell.IsBold;
 
                 MessageBox.Show("Cell formatting toggled!", "Format", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Please select a cell first", "No Selection",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -321,6 +326,34 @@ namespace DoWell
             {
                 MessageBox.Show($"Error filtering users: {ex.Message}", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // Formatting button event handlers
+        private void BoldButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_viewModel.SelectedCell != null)
+            {
+                _viewModel.SelectedCell.IsBold = BoldButton.IsChecked ?? false;
+                _viewModel.SaveChangesCommand.Execute(null);
+            }
+        }
+
+        private void ItalicButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_viewModel.SelectedCell != null)
+            {
+                _viewModel.SelectedCell.IsItalic = ItalicButton.IsChecked ?? false;
+                _viewModel.SaveChangesCommand.Execute(null);
+            }
+        }
+
+        private void UnderlineButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_viewModel.SelectedCell != null)
+            {
+                _viewModel.SelectedCell.IsUnderline = UnderlineButton.IsChecked ?? false;
+                _viewModel.SaveChangesCommand.Execute(null);
             }
         }
     }

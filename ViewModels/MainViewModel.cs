@@ -1,12 +1,9 @@
-﻿// ViewModels/MainViewModel.cs
-using System;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Windows;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DoWell.Data;
 using DoWell.Models;
+using System.Collections.ObjectModel;
+using System.Windows;
 using Microsoft.EntityFrameworkCore;
 
 namespace DoWell.ViewModels
@@ -16,13 +13,13 @@ namespace DoWell.ViewModels
         private readonly DoWellContext _context;
 
         [ObservableProperty]
-        private ObservableCollection<Worksheet> _worksheets;
+        private ObservableCollection<Worksheet> _worksheets = new();
 
         [ObservableProperty]
-        private Worksheet _selectedWorksheet;
+        private Worksheet? _selectedWorksheet;
 
         [ObservableProperty]
-        private ObservableCollection<ObservableCollection<CellViewModel>> _gridData;
+        private ObservableCollection<ObservableCollection<CellViewModel>> _gridData = new();
 
         [ObservableProperty]
         private int _rowCount;
@@ -31,10 +28,10 @@ namespace DoWell.ViewModels
         private int _columnCount;
 
         [ObservableProperty]
-        private CellViewModel _selectedCell;
+        private CellViewModel? _selectedCell;
 
         [ObservableProperty]
-        private string _searchText;
+        private string _searchText = string.Empty;
 
         public MainViewModel()
         {
@@ -64,7 +61,7 @@ namespace DoWell.ViewModels
             }
         }
 
-        partial void OnSelectedWorksheetChanged(Worksheet value)
+        partial void OnSelectedWorksheetChanged(Worksheet? value)
         {
             if (value != null)
             {
@@ -310,6 +307,62 @@ namespace DoWell.ViewModels
             catch (Exception ex)
             {
                 MessageBox.Show($"Error during search: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        [RelayCommand]
+        private void NewWorkbook()
+        {
+            try
+            {
+                var newWorkbook = new Workbook
+                {
+                    Name = $"New Workbook {DateTime.Now:HH-mm-ss}",
+                    CreatedDate = DateTime.Now,
+                    ModifiedDate = DateTime.Now
+                };
+
+                var newWorksheet = new Worksheet
+                {
+                    Name = "Sheet1",
+                    RowCount = 10,
+                    ColumnCount = 10,
+                    Workbook = newWorkbook
+                };
+
+                newWorkbook.Worksheets.Add(newWorksheet);
+
+                _context.Workbooks.Add(newWorkbook);
+                _context.SaveChanges();
+
+                LoadWorksheets();
+                SelectedWorksheet = newWorksheet;
+
+                MessageBox.Show("New workbook created!", "Success",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error creating workbook: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        [RelayCommand]
+        private void Open()
+        {
+            try
+            {
+                // In een echte applicatie zou je hier een file dialog openen
+                // Voor nu laden we gewoon de workbooks opnieuw
+                LoadWorksheets();
+                MessageBox.Show("Workbooks refreshed from database", "Open",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error opening: {ex.Message}", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
