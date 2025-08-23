@@ -13,19 +13,13 @@ namespace DoWell.ViewModels
         private readonly DoWellContext _context;
 
         [ObservableProperty]
-        private ObservableCollection<Worksheet> _worksheets = new();
-
-        [ObservableProperty]
-        private Worksheet? _selectedWorksheet;
-
-        [ObservableProperty]
         private ObservableCollection<ObservableCollection<CellViewModel>> _gridData = new();
 
         [ObservableProperty]
-        private int _rowCount;
+        private int _rowCount = 10;
 
         [ObservableProperty]
-        private int _columnCount;
+        private int _columnCount = 10;
 
         [ObservableProperty]
         private CellViewModel? _selectedCell;
@@ -33,47 +27,15 @@ namespace DoWell.ViewModels
         public MainViewModel()
         {
             _context = new DoWellContext();
-            LoadWorksheets();
-        }
-
-        private void LoadWorksheets()
-        {
-            try
-            {
-                var worksheets = _context.Worksheets
-                    .Include(w => w.Cells)
-                    .ToList();
-
-                Worksheets = new ObservableCollection<Worksheet>(worksheets);
-
-                if (Worksheets.Any())
-                {
-                    SelectedWorksheet = Worksheets.First();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error loading worksheets: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        partial void OnSelectedWorksheetChanged(Worksheet? value)
-        {
-            if (value != null)
-            {
-                LoadGridData();
-            }
+            LoadGridData();
         }
 
         private void LoadGridData()
         {
-            if (SelectedWorksheet == null) return;
-
             try
             {
-                RowCount = SelectedWorksheet.RowCount;
-                ColumnCount = SelectedWorksheet.ColumnCount;
+                // Load all cells from database
+                var allCells = _context.Cells.ToList();
 
                 GridData = new ObservableCollection<ObservableCollection<CellViewModel>>();
 
@@ -82,9 +44,8 @@ namespace DoWell.ViewModels
                     var rowData = new ObservableCollection<CellViewModel>();
                     for (int col = 0; col < ColumnCount; col++)
                     {
-                        var cell = SelectedWorksheet.Cells
-                            .FirstOrDefault(c => c.Row == row && c.Column == col)
-                            ?? new Cell { Row = row, Column = col, WorksheetId = SelectedWorksheet.WorksheetId };
+                        var cell = allCells.FirstOrDefault(c => c.Row == row && c.Column == col)
+                                  ?? new Cell { Row = row, Column = col };
 
                         rowData.Add(new CellViewModel(cell));
                     }
@@ -101,8 +62,6 @@ namespace DoWell.ViewModels
         [RelayCommand]
         private void AddRow()
         {
-            if (SelectedWorksheet == null) return;
-
             try
             {
                 var newRow = new ObservableCollection<CellViewModel>();
@@ -111,17 +70,16 @@ namespace DoWell.ViewModels
                     var cell = new Cell
                     {
                         Row = RowCount,
-                        Column = col,
-                        WorksheetId = SelectedWorksheet.WorksheetId
+                        Column = col
                     };
                     newRow.Add(new CellViewModel(cell));
                 }
 
                 GridData.Add(newRow);
                 RowCount++;
-                SelectedWorksheet.RowCount = RowCount;
 
-                SaveChanges();
+                MessageBox.Show("Row added successfully!", "Success",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -133,7 +91,7 @@ namespace DoWell.ViewModels
         [RelayCommand]
         private void RemoveRow()
         {
-            if (SelectedWorksheet == null || GridData.Count <= 1) return;
+            if (GridData.Count <= 1) return;
 
             try
             {
@@ -145,16 +103,17 @@ namespace DoWell.ViewModels
                     // Remove cells from database
                     var lastRowIndex = RowCount - 1;
                     var cellsToRemove = _context.Cells
-                        .Where(c => c.WorksheetId == SelectedWorksheet.WorksheetId && c.Row == lastRowIndex)
+                        .Where(c => c.Row == lastRowIndex)
                         .ToList();
 
                     _context.Cells.RemoveRange(cellsToRemove);
+                    _context.SaveChanges();
 
                     GridData.RemoveAt(GridData.Count - 1);
                     RowCount--;
-                    SelectedWorksheet.RowCount = RowCount;
 
-                    SaveChanges();
+                    MessageBox.Show("Row removed successfully!", "Success",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
@@ -167,8 +126,6 @@ namespace DoWell.ViewModels
         [RelayCommand]
         private void AddColumn()
         {
-            if (SelectedWorksheet == null) return;
-
             try
             {
                 for (int row = 0; row < RowCount; row++)
@@ -176,16 +133,15 @@ namespace DoWell.ViewModels
                     var cell = new Cell
                     {
                         Row = row,
-                        Column = ColumnCount,
-                        WorksheetId = SelectedWorksheet.WorksheetId
+                        Column = ColumnCount
                     };
                     GridData[row].Add(new CellViewModel(cell));
                 }
 
                 ColumnCount++;
-                SelectedWorksheet.ColumnCount = ColumnCount;
 
-                SaveChanges();
+                MessageBox.Show("Column added successfully!", "Success",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -197,7 +153,7 @@ namespace DoWell.ViewModels
         [RelayCommand]
         private void RemoveColumn()
         {
-            if (SelectedWorksheet == null || ColumnCount <= 1) return;
+            if (ColumnCount <= 1) return;
 
             try
             {
@@ -209,10 +165,11 @@ namespace DoWell.ViewModels
                     // Remove cells from database
                     var lastColIndex = ColumnCount - 1;
                     var cellsToRemove = _context.Cells
-                        .Where(c => c.WorksheetId == SelectedWorksheet.WorksheetId && c.Column == lastColIndex)
+                        .Where(c => c.Column == lastColIndex)
                         .ToList();
 
                     _context.Cells.RemoveRange(cellsToRemove);
+                    _context.SaveChanges();
 
                     foreach (var row in GridData)
                     {
@@ -220,9 +177,9 @@ namespace DoWell.ViewModels
                     }
 
                     ColumnCount--;
-                    SelectedWorksheet.ColumnCount = ColumnCount;
 
-                    SaveChanges();
+                    MessageBox.Show("Column removed successfully!", "Success",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
@@ -248,16 +205,22 @@ namespace DoWell.ViewModels
                         if (string.IsNullOrEmpty(cell.Value) && cell.CellId == 0)
                             continue; // Skip empty new cells
 
-                        var existingCell = _context.Cells.Local
-                            .FirstOrDefault(c => c.CellId == cell.CellId);
+                        var existingCell = _context.Cells
+                            .FirstOrDefault(c => c.Row == cell.Row && c.Column == cell.Column);
 
-                        if (existingCell == null && cell.CellId == 0)
+                        if (existingCell == null)
                         {
-                            _context.Cells.Add(cell);
+                            if (!string.IsNullOrEmpty(cell.Value) || cell.IsBold || cell.IsItalic || cell.IsUnderline)
+                            {
+                                _context.Cells.Add(cell);
+                            }
                         }
-                        else if (existingCell == null)
+                        else
                         {
-                            _context.Cells.Update(cell);
+                            existingCell.Value = cell.Value;
+                            existingCell.IsBold = cell.IsBold;
+                            existingCell.IsItalic = cell.IsItalic;
+                            existingCell.IsUnderline = cell.IsUnderline;
                         }
                     }
                 }
@@ -269,62 +232,6 @@ namespace DoWell.ViewModels
             catch (Exception ex)
             {
                 MessageBox.Show($"Error saving changes: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        [RelayCommand]
-        private void NewWorkbook()
-        {
-            try
-            {
-                var newWorkbook = new Workbook
-                {
-                    Name = $"New Workbook {DateTime.Now:HH-mm-ss}",
-                    CreatedDate = DateTime.Now,
-                    ModifiedDate = DateTime.Now
-                };
-
-                var newWorksheet = new Worksheet
-                {
-                    Name = "Sheet1",
-                    RowCount = 10,
-                    ColumnCount = 10,
-                    Workbook = newWorkbook
-                };
-
-                newWorkbook.Worksheets.Add(newWorksheet);
-
-                _context.Workbooks.Add(newWorkbook);
-                _context.SaveChanges();
-
-                LoadWorksheets();
-                SelectedWorksheet = newWorksheet;
-
-                MessageBox.Show("New workbook created!", "Success",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error creating workbook: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        [RelayCommand]
-        private void Open()
-        {
-            try
-            {
-                // In een echte applicatie zou je hier een file dialog openen
-                // Voor nu laden we gewoon de workbooks opnieuw
-                LoadWorksheets();
-                MessageBox.Show("Workbooks refreshed from database", "Open",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error opening: {ex.Message}", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }

@@ -16,13 +16,11 @@ namespace DoWell
     public partial class MainWindow : Window
     {
         private MainViewModel _viewModel = null!;
-        private DoWellContext _context = null!;
 
         public MainWindow()
         {
             InitializeComponent();
             _viewModel = (MainViewModel)DataContext;
-            _context = new DoWellContext();
             InitializeDataGrid();
         }
 
@@ -104,6 +102,10 @@ namespace DoWell
             {
                 Converter = new BoolToFontStyleConverter()
             });
+            factory.SetBinding(TextBlock.TextDecorationsProperty, new Binding($"[{columnIndex}].IsUnderline")
+            {
+                Converter = new BoolToTextDecorationConverter()
+            });
 
             template.VisualTree = factory;
             return template;
@@ -137,7 +139,7 @@ namespace DoWell
             try
             {
                 // The cell value will be automatically updated through binding
-                // We can save changes here if needed
+                // Auto-save after editing
                 _viewModel.SaveChangesCommand.Execute(null);
             }
             catch (Exception ex)
@@ -175,7 +177,6 @@ namespace DoWell
                 Console.WriteLine($"Selection error: {ex.Message}");
             }
         }
-        
 
         // Formatting button event handlers
         private void BoldButton_Click(object sender, RoutedEventArgs e)
@@ -230,6 +231,19 @@ namespace DoWell
         public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
             return FontStyles.Italic.Equals(value);
+        }
+    }
+
+    public class BoolToTextDecorationConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            return (bool)value ? TextDecorations.Underline : null;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            return value != null && ((TextDecorationCollection)value).Count > 0;
         }
     }
 }

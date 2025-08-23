@@ -78,6 +78,10 @@
                          Click="UnderlineButton_Click">
                 <TextBlock Text="U" TextDecorations="Underline"/>
             </ToggleButton>
+            <Separator/>
+            <Button Content="💾 Save" Command="{Binding SaveChangesCommand}" 
+                    Style="{StaticResource ToolbarButtonStyle}"
+                    ToolTip="Save changes to database"/>
         </ToolBar>
 
         <!-- Formula Bar -->
@@ -101,10 +105,6 @@
             <StatusBarItem>
                 <TextBlock Text="{Binding ColumnCount, StringFormat='Columns: {0}'}"/>
             </StatusBarItem>
-            <Separator/>
-            <StatusBarItem>
-                <TextBlock Text="{Binding SelectedWorksheet.Name, StringFormat='Current Sheet: {0}'}"/>
-            </StatusBarItem>
         </StatusBar>
 
         <!-- Main Content - DataGrid -->
@@ -126,7 +126,6 @@
                             <MenuItem Header="Cut" InputGestureText="Ctrl+X"/>
                             <MenuItem Header="Copy" InputGestureText="Ctrl+C"/>
                             <MenuItem Header="Paste" InputGestureText="Ctrl+V"/>
-                            <Separator/>
                         </ContextMenu>
                     </DataGrid.ContextMenu>
                 </DataGrid>
