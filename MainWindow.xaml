@@ -45,6 +45,9 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+
+        <!-- Converter for status message color -->
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </Window.Resources>
 
     <DockPanel>
@@ -104,6 +107,24 @@
             <Separator/>
             <StatusBarItem>
                 <TextBlock Text="{Binding ColumnCount, StringFormat='Columns: {0}'}"/>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem HorizontalAlignment="Stretch">
+                <TextBlock Text="{Binding StatusMessage}" 
+                          FontWeight="SemiBold">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsStatusSuccess}" Value="True">
+                                    <Setter Property="Foreground" Value="Green"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsStatusSuccess}" Value="False">
+                                    <Setter Property="Foreground" Value="Red"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
             </StatusBarItem>
         </StatusBar>
 

@@ -31,7 +31,8 @@ namespace DoWell
                 // Subscribe to GridData changes
                 _viewModel.PropertyChanged += (s, e) =>
                 {
-                    if (e.PropertyName == nameof(_viewModel.GridData))
+                    if (e.PropertyName == nameof(_viewModel.GridData) ||
+                        e.PropertyName == nameof(_viewModel.ColumnCount))
                     {
                         UpdateDataGridColumns();
                     }
@@ -52,6 +53,10 @@ namespace DoWell
 
             try
             {
+                // Save current selection
+                var currentRow = MainDataGrid.SelectedIndex;
+                var currentColumn = MainDataGrid.CurrentColumn?.DisplayIndex ?? -1;
+
                 MainDataGrid.Columns.Clear();
                 MainDataGrid.ItemsSource = null;
 
@@ -65,7 +70,7 @@ namespace DoWell
                 };
                 MainDataGrid.Columns.Add(rowHeaderColumn);
 
-                // Add data columns
+                // Add data columns based on actual ColumnCount
                 for (int col = 0; col < _viewModel.ColumnCount; col++)
                 {
                     var column = new DataGridTemplateColumn
@@ -79,11 +84,21 @@ namespace DoWell
                 }
 
                 MainDataGrid.ItemsSource = _viewModel.GridData;
+
+                // Restore selection if possible
+                if (currentRow >= 0 && currentRow < MainDataGrid.Items.Count)
+                {
+                    MainDataGrid.SelectedIndex = currentRow;
+                    if (currentColumn >= 0 && currentColumn < MainDataGrid.Columns.Count)
+                    {
+                        MainDataGrid.CurrentColumn = MainDataGrid.Columns[currentColumn];
+                    }
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error updating columns: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                _viewModel.StatusMessage = $"Error updating columns: {ex.Message}";
+                _viewModel.IsStatusSuccess = false;
             }
         }
 
@@ -144,8 +159,8 @@ namespace DoWell
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error saving cell: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                _viewModel.StatusMessage = $"Error saving cell: {ex.Message}";
+                _viewModel.IsStatusSuccess = false;
             }
         }
 
@@ -181,28 +196,52 @@ namespace DoWell
         // Formatting button event handlers
         private void BoldButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_viewModel.SelectedCell != null)
+            try
             {
-                _viewModel.SelectedCell.IsBold = BoldButton.IsChecked ?? false;
-                _viewModel.SaveChangesCommand.Execute(null);
+                if (_viewModel.SelectedCell != null)
+                {
+                    _viewModel.SelectedCell.IsBold = BoldButton.IsChecked ?? false;
+                    _viewModel.SaveChangesCommand.Execute(null);
+                }
+            }
+            catch (Exception ex)
+            {
+                _viewModel.StatusMessage = $"Error applying bold: {ex.Message}";
+                _viewModel.IsStatusSuccess = false;
             }
         }
 
         private void ItalicButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_viewModel.SelectedCell != null)
+            try
             {
-                _viewModel.SelectedCell.IsItalic = ItalicButton.IsChecked ?? false;
-                _viewModel.SaveChangesCommand.Execute(null);
+                if (_viewModel.SelectedCell != null)
+                {
+                    _viewModel.SelectedCell.IsItalic = ItalicButton.IsChecked ?? false;
+                    _viewModel.SaveChangesCommand.Execute(null);
+                }
+            }
+            catch (Exception ex)
+            {
+                _viewModel.StatusMessage = $"Error applying italic: {ex.Message}";
+                _viewModel.IsStatusSuccess = false;
             }
         }
 
         private void UnderlineButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_viewModel.SelectedCell != null)
+            try
             {
-                _viewModel.SelectedCell.IsUnderline = UnderlineButton.IsChecked ?? false;
-                _viewModel.SaveChangesCommand.Execute(null);
+                if (_viewModel.SelectedCell != null)
+                {
+                    _viewModel.SelectedCell.IsUnderline = UnderlineButton.IsChecked ?? false;
+                    _viewModel.SaveChangesCommand.Execute(null);
+                }
+            }
+            catch (Exception ex)
+            {
+                _viewModel.StatusMessage = $"Error applying underline: {ex.Message}";
+                _viewModel.IsStatusSuccess = false;
             }
         }
     }

@@ -5,6 +5,8 @@ using DoWell.Models;
 using System.Collections.ObjectModel;
 using System.Windows;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
 
 namespace DoWell.ViewModels
 {
@@ -24,6 +26,12 @@ namespace DoWell.ViewModels
         [ObservableProperty]
         private CellViewModel? _selectedCell;
 
+        [ObservableProperty]
+        private string _statusMessage = "Ready";
+
+        [ObservableProperty]
+        private bool _isStatusSuccess = true;
+
         public MainViewModel()
         {
             _context = new DoWellContext();
@@ -36,6 +44,13 @@ namespace DoWell.ViewModels
             {
                 // Load all cells from database
                 var allCells = _context.Cells.ToList();
+
+                // Determine actual grid size from database
+                if (allCells.Any())
+                {
+                    RowCount = Math.Max(allCells.Max(c => c.Row) + 1, 10);
+                    ColumnCount = Math.Max(allCells.Max(c => c.Column) + 1, 10);
+                }
 
                 GridData = new ObservableCollection<ObservableCollection<CellViewModel>>();
 
@@ -51,11 +66,28 @@ namespace DoWell.ViewModels
                     }
                     GridData.Add(rowData);
                 }
+
+                SetStatusMessage("Data loaded successfully", true);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error loading grid data: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                SetStatusMessage($"Error loading data: {ex.Message}", false);
+            }
+        }
+
+        private void SetStatusMessage(string message, bool isSuccess)
+        {
+            StatusMessage = message;
+            IsStatusSuccess = isSuccess;
+
+            // Auto-clear success messages after 3 seconds
+            if (isSuccess)
+            {
+                Task.Run(async () =>
+                {
+                    await Task.Delay(3000);
+                    StatusMessage = "Ready";
+                });
             }
         }
 
@@ -78,20 +110,24 @@ namespace DoWell.ViewModels
                 GridData.Add(newRow);
                 RowCount++;
 
-                MessageBox.Show("Row added successfully!", "Success",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                // Save to database immediately
+                SaveChangesToDatabase();
+                SetStatusMessage("Row added successfully", true);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error adding row: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                SetStatusMessage($"Error adding row: {ex.Message}", false);
             }
         }
 
         [RelayCommand]
         private void RemoveRow()
         {
-            if (GridData.Count <= 1) return;
+            if (GridData.Count <= 1)
+            {
+                SetStatusMessage("Cannot remove last row", false);
+                return;
+            }
 
             try
             {
@@ -112,14 +148,12 @@ namespace DoWell.ViewModels
                     GridData.RemoveAt(GridData.Count - 1);
                     RowCount--;
 
-                    MessageBox.Show("Row removed successfully!", "Success",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
+                    SetStatusMessage("Row removed successfully", true);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error removing row: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                SetStatusMessage($"Error removing row: {ex.Message}", false);
             }
         }
 
@@ -140,20 +174,28 @@ namespace DoWell.ViewModels
 
                 ColumnCount++;
 
-                MessageBox.Show("Column added successfully!", "Success",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                // Force UI update by creating new collection
+                var tempData = new ObservableCollection<ObservableCollection<CellViewModel>>(GridData);
+                GridData = tempData;
+
+                // Save to database immediately
+                SaveChangesToDatabase();
+                SetStatusMessage("Column added successfully", true);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error adding column: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                SetStatusMessage($"Error adding column: {ex.Message}", false);
             }
         }
 
         [RelayCommand]
         private void RemoveColumn()
         {
-            if (ColumnCount <= 1) return;
+            if (ColumnCount <= 1)
+            {
+                SetStatusMessage("Cannot remove last column", false);
+                return;
+            }
 
             try
             {
@@ -178,14 +220,16 @@ namespace DoWell.ViewModels
 
                     ColumnCount--;
 
-                    MessageBox.Show("Column removed successfully!", "Success",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
+                    // Force UI update
+                    var tempData = new ObservableCollection<ObservableCollection<CellViewModel>>(GridData);
+                    GridData = tempData;
+
+                    SetStatusMessage("Column removed successfully", true);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error removing column: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                SetStatusMessage($"Error removing column: {ex.Message}", false);
             }
         }
 
@@ -194,46 +238,47 @@ namespace DoWell.ViewModels
         {
             try
             {
-                // Update or add cells
-                foreach (var row in GridData)
-                {
-                    foreach (var cellVm in row)
-                    {
-                        cellVm.UpdateCell();
-                        var cell = cellVm.GetCell();
-
-                        if (string.IsNullOrEmpty(cell.Value) && cell.CellId == 0)
-                            continue; // Skip empty new cells
-
-                        var existingCell = _context.Cells
-                            .FirstOrDefault(c => c.Row == cell.Row && c.Column == cell.Column);
-
-                        if (existingCell == null)
-                        {
-                            if (!string.IsNullOrEmpty(cell.Value) || cell.IsBold || cell.IsItalic || cell.IsUnderline)
-                            {
-                                _context.Cells.Add(cell);
-                            }
-                        }
-                        else
-                        {
-                            existingCell.Value = cell.Value;
-                            existingCell.IsBold = cell.IsBold;
-                            existingCell.IsItalic = cell.IsItalic;
-                            existingCell.IsUnderline = cell.IsUnderline;
-                        }
-                    }
-                }
-
-                _context.SaveChanges();
-                MessageBox.Show("Changes saved successfully!", "Success",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                SaveChangesToDatabase();
+                SetStatusMessage("Changes saved successfully", true);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error saving changes: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                SetStatusMessage($"Error saving changes: {ex.Message}", false);
             }
+        }
+
+        private void SaveChangesToDatabase()
+        {
+            // Update or add cells
+            foreach (var row in GridData)
+            {
+                foreach (var cellVm in row)
+                {
+                    cellVm.UpdateCell();
+                    var cell = cellVm.GetCell();
+
+                    var existingCell = _context.Cells
+                        .FirstOrDefault(c => c.Row == cell.Row && c.Column == cell.Column);
+
+                    if (existingCell == null)
+                    {
+                        // Only add cells that have content or formatting
+                        if (!string.IsNullOrEmpty(cell.Value) || cell.IsBold || cell.IsItalic || cell.IsUnderline)
+                        {
+                            _context.Cells.Add(cell);
+                        }
+                    }
+                    else
+                    {
+                        existingCell.Value = cell.Value;
+                        existingCell.IsBold = cell.IsBold;
+                        existingCell.IsItalic = cell.IsItalic;
+                        existingCell.IsUnderline = cell.IsUnderline;
+                    }
+                }
+            }
+
+            _context.SaveChanges();
         }
     }
 }
