@@ -8,11 +8,11 @@
         mc:Ignorable="d"
         Title="DoWell - Excel Clone" Height="700" Width="1200"
         WindowStartupLocation="CenterScreen">
-    
+
     <Window.DataContext>
         <vm:MainViewModel/>
     </Window.DataContext>
-    
+
     <Window.Resources>
         <!-- Style for buttons -->
         <Style x:Key="ToolbarButtonStyle" TargetType="Button">
@@ -32,7 +32,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-        
+
         <!-- Style for DataGrid cells -->
         <Style x:Key="CellStyle" TargetType="DataGridCell">
             <Setter Property="BorderThickness" Value="0.5"/>
@@ -45,57 +45,9 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-        
-        <!-- Style for TabItems -->
-        <Style x:Key="TabItemStyle" TargetType="TabItem">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TabItem">
-                        <Border Name="Border" Margin="2,0" Background="#F5F5F5" 
-                                BorderBrush="#E0E0E0" BorderThickness="1,1,1,0" 
-                                CornerRadius="4,4,0,0">
-                            <ContentPresenter x:Name="ContentSite" 
-                                            VerticalAlignment="Center"
-                                            HorizontalAlignment="Center"
-                                            ContentSource="Header" Margin="10,2"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="White"/>
-                                <Setter Property="FontWeight" Value="Bold"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
     </Window.Resources>
-    
+
     <DockPanel>
-        <!-- Menu Bar -->
-        <Menu DockPanel.Dock="Top">
-            <MenuItem Header="_File">
-                <MenuItem Header="_New Workbook" Command="{Binding NewWorkbookCommand}"/>
-                <MenuItem Header="_Open" Command="{Binding OpenCommand}"/>
-                <MenuItem Header="_Save" Command="{Binding SaveChangesCommand}"/>
-                <Separator/>
-                <MenuItem Header="E_xit" Click="Exit_Click"/>
-            </MenuItem>
-            <MenuItem Header="_Edit">
-                <MenuItem Header="_Copy" InputGestureText="Ctrl+C"/>
-                <MenuItem Header="_Paste" InputGestureText="Ctrl+V"/>
-                <MenuItem Header="_Find" Command="{Binding SearchCellsCommand}"/>
-            </MenuItem>
-            <MenuItem Header="_View">
-                <MenuItem Header="Show _Grid Lines" IsCheckable="True" IsChecked="True"/>
-                <MenuItem Header="Show _Formula Bar" IsCheckable="True" IsChecked="True"/>
-            </MenuItem>
-            <MenuItem Header="_Help">
-                <MenuItem Header="_About" Click="About_Click"/>
-                <MenuItem Header="_Quick Guide" Click="Guide_Click"/>
-            </MenuItem>
-        </Menu>
-        
         <!-- Toolbar -->
         <ToolBar DockPanel.Dock="Top" Height="40">
             <Button Content="➕ Row" Command="{Binding AddRowCommand}" 
@@ -126,15 +78,8 @@
                          Click="UnderlineButton_Click">
                 <TextBlock Text="U" TextDecorations="Underline"/>
             </ToggleButton>
-            <Separator/>
-            <Label Content="Search:"/>
-            <TextBox Width="150" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                    VerticalAlignment="Center"/>
-            <Button Content="🔍" Command="{Binding SearchCellsCommand}" 
-                   Margin="2" Padding="8,5"
-                   ToolTip="Search in cells"/>
         </ToolBar>
-        
+
         <!-- Formula Bar -->
         <Grid DockPanel.Dock="Top" Height="30" Background="#F5F5F5">
             <Grid.ColumnDefinitions>
@@ -146,7 +91,7 @@
                     Text="{Binding SelectedCell.Value, UpdateSourceTrigger=PropertyChanged}"
                     VerticalAlignment="Center"/>
         </Grid>
-        
+
         <!-- Status Bar -->
         <StatusBar DockPanel.Dock="Bottom" Height="25">
             <StatusBarItem>
@@ -161,120 +106,31 @@
                 <TextBlock Text="{Binding SelectedWorksheet.Name, StringFormat='Current Sheet: {0}'}"/>
             </StatusBarItem>
         </StatusBar>
-        
-        <!-- Main Content -->
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            
-            <TabControl>
-                <TabItem Header="Spreadsheet" Style="{StaticResource TabItemStyle}">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="200"/>
-                            <ColumnDefinition Width="5"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <!-- Worksheet List -->
-                        <GroupBox Grid.Column="0" Header="Worksheets" Margin="5">
-                            <ListBox ItemsSource="{Binding Worksheets}" 
-                                    SelectedItem="{Binding SelectedWorksheet}"
-                                    DisplayMemberPath="Name">
-                                <ListBox.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="Rename" Click="RenameWorksheet_Click"/>
-                                        <MenuItem Header="Delete" Click="DeleteWorksheet_Click"/>
-                                        <MenuItem Header="Duplicate" Click="DuplicateWorksheet_Click"/>
-                                    </ContextMenu>
-                                </ListBox.ContextMenu>
-                            </ListBox>
-                        </GroupBox>
-                        
-                        <!-- GridSplitter -->
-                        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"/>
-                        
-                        <!-- Main DataGrid -->
-                        <Border Grid.Column="2" Margin="5" BorderBrush="#E0E0E0" BorderThickness="1">
-                            <ScrollViewer HorizontalScrollBarVisibility="Auto" 
-                                        VerticalScrollBarVisibility="Auto">
-                                <DataGrid x:Name="MainDataGrid"
-                                        AutoGenerateColumns="False"
-                                        CanUserAddRows="False"
-                                        CanUserDeleteRows="False"
-                                        GridLinesVisibility="All"
-                                        CellStyle="{StaticResource CellStyle}"
-                                        SelectionMode="Single"
-                                        SelectionUnit="Cell"
-                                        CellEditEnding="DataGrid_CellEditEnding"
-                                        SelectedCellsChanged="DataGrid_SelectedCellsChanged">
-                                    <DataGrid.ContextMenu>
-                                        <ContextMenu>
-                                            <MenuItem Header="Cut" InputGestureText="Ctrl+X"/>
-                                            <MenuItem Header="Copy" InputGestureText="Ctrl+C"/>
-                                            <MenuItem Header="Paste" InputGestureText="Ctrl+V"/>
-                                            <Separator/>
-                                            <MenuItem Header="Format Cell" Click="FormatCell_Click"/>
-                                            <MenuItem Header="Clear Cell" Click="ClearCell_Click"/>
-                                        </ContextMenu>
-                                    </DataGrid.ContextMenu>
-                                </DataGrid>
-                            </ScrollViewer>
-                        </Border>
-                    </Grid>
-                </TabItem>
-                
-                <TabItem Header="Data Management" Style="{StaticResource TabItemStyle}">
-                    <Grid Margin="10">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        
-                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-                            <Label Content="Select Table:"/>
-                            <ComboBox x:Name="TableSelector" Width="150" Margin="5,0">
-                                <ComboBoxItem Content="Workbooks"/>
-                                <ComboBoxItem Content="Worksheets"/>
-                                <ComboBoxItem Content="Users"/>
-                                <ComboBoxItem Content="Cells"/>
-                            </ComboBox>
-                            <Button Content="Refresh" Margin="5,0" Padding="10,5" Click="RefreshData_Click"/>
-                        </StackPanel>
-                        
-                        <DataGrid Grid.Row="1" x:Name="ManagementGrid" 
-                                AutoGenerateColumns="True"
-                                CanUserAddRows="True"
-                                CanUserDeleteRows="True"/>
-                    </Grid>
-                </TabItem>
-                
-                <TabItem Header="Users" Style="{StaticResource TabItemStyle}">
-                    <Grid Margin="10">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        
-                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-                            <Label Content="Filter by Username:"/>
-                            <TextBox x:Name="UserFilter" Width="150" Margin="5,0"/>
-                            <Button Content="Filter" Margin="5,0" Padding="10,5" Click="FilterUsers_Click"/>
-                        </StackPanel>
-                        
-                        <DataGrid Grid.Row="1" x:Name="UsersGrid" 
-                                AutoGenerateColumns="False">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="ID" Binding="{Binding UserId}" Width="50"/>
-                                <DataGridTextColumn Header="Username" Binding="{Binding Username}" Width="150"/>
-                                <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="200"/>
-                                <DataGridTextColumn Header="Created Date" Binding="{Binding CreatedDate}" Width="150"/>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </Grid>
-                </TabItem>
-            </TabControl>
-        </Grid>
+
+        <!-- Main Content - DataGrid -->
+        <Border Margin="5" BorderBrush="#E0E0E0" BorderThickness="1">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" 
+                        VerticalScrollBarVisibility="Auto">
+                <DataGrid x:Name="MainDataGrid"
+                        AutoGenerateColumns="False"
+                        CanUserAddRows="False"
+                        CanUserDeleteRows="False"
+                        GridLinesVisibility="All"
+                        CellStyle="{StaticResource CellStyle}"
+                        SelectionMode="Single"
+                        SelectionUnit="Cell"
+                        CellEditEnding="DataGrid_CellEditEnding"
+                        SelectedCellsChanged="DataGrid_SelectedCellsChanged">
+                    <DataGrid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Cut" InputGestureText="Ctrl+X"/>
+                            <MenuItem Header="Copy" InputGestureText="Ctrl+C"/>
+                            <MenuItem Header="Paste" InputGestureText="Ctrl+V"/>
+                            <Separator/>
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
+                </DataGrid>
+            </ScrollViewer>
+        </Border>
     </DockPanel>
 </Window>

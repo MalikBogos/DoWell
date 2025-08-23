@@ -30,9 +30,6 @@ namespace DoWell.ViewModels
         [ObservableProperty]
         private CellViewModel? _selectedCell;
 
-        [ObservableProperty]
-        private string _searchText = string.Empty;
-
         public MainViewModel()
         {
             _context = new DoWellContext();
@@ -272,41 +269,6 @@ namespace DoWell.ViewModels
             catch (Exception ex)
             {
                 MessageBox.Show($"Error saving changes: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        [RelayCommand]
-        private void SearchCells()
-        {
-            if (string.IsNullOrWhiteSpace(SearchText) || GridData == null) return;
-
-            try
-            {
-                var found = false;
-                foreach (var row in GridData)
-                {
-                    foreach (var cell in row)
-                    {
-                        if (cell.Value?.Contains(SearchText, StringComparison.OrdinalIgnoreCase) == true)
-                        {
-                            SelectedCell = cell;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (found) break;
-                }
-
-                if (!found)
-                {
-                    MessageBox.Show($"'{SearchText}' not found", "Search Result",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error during search: {ex.Message}", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }

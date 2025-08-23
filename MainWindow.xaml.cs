@@ -24,7 +24,6 @@ namespace DoWell
             _viewModel = (MainViewModel)DataContext;
             _context = new DoWellContext();
             InitializeDataGrid();
-            LoadUsersGrid();
         }
 
         private void InitializeDataGrid()
@@ -97,10 +96,6 @@ namespace DoWell
             factory.SetBinding(TextBlock.TextProperty, new Binding($"[{columnIndex}].Value"));
 
             // Apply formatting
-            var boldBinding = new Binding($"[{columnIndex}].IsBold");
-            var italicBinding = new Binding($"[{columnIndex}].IsItalic");
-            var underlineBinding = new Binding($"[{columnIndex}].IsUnderline");
-
             factory.SetBinding(TextBlock.FontWeightProperty, new Binding($"[{columnIndex}].IsBold")
             {
                 Converter = new BoolToFontWeightConverter()
@@ -180,154 +175,7 @@ namespace DoWell
                 Console.WriteLine($"Selection error: {ex.Message}");
             }
         }
-
-        private void Exit_Click(object sender, RoutedEventArgs e)
-        {
-            var result = MessageBox.Show("Are you sure you want to exit?", "Confirm Exit",
-                MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (result == MessageBoxResult.Yes)
-            {
-                Application.Current.Shutdown();
-            }
-        }
-
-        private void About_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("DoWell Excel Clone\nVersion 1.0\n\nA simple spreadsheet application built with WPF and Entity Framework.",
-                "About DoWell", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private void Guide_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Quick Guide:\n\n" +
-                "• Click on any cell to edit its content\n" +
-                "• Use the toolbar buttons to add/remove rows and columns\n" +
-                "• Select a cell and use B/I/U buttons to format text\n" +
-                "• Right-click for context menu options\n" +
-                "• Use the search box to find content in cells\n" +
-                "• Switch between tabs to manage data",
-                "Quick Guide", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private void FormatCell_Click(object sender, RoutedEventArgs e)
-        {
-            if (_viewModel.SelectedCell != null)
-            {
-                // Show formatting options
-                _viewModel.SelectedCell.IsBold = !_viewModel.SelectedCell.IsBold;
-                _viewModel.SaveChangesCommand.Execute(null);
-
-                // Update the formatting buttons
-                BoldButton.IsChecked = _viewModel.SelectedCell.IsBold;
-
-                MessageBox.Show("Cell formatting toggled!", "Format", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                MessageBox.Show("Please select a cell first", "No Selection",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
-
-        private void ClearCell_Click(object sender, RoutedEventArgs e)
-        {
-            if (_viewModel.SelectedCell != null)
-            {
-                _viewModel.SelectedCell.Value = "";
-                _viewModel.SelectedCell.IsBold = false;
-                _viewModel.SelectedCell.IsItalic = false;
-                _viewModel.SelectedCell.IsUnderline = false;
-                _viewModel.SaveChangesCommand.Execute(null);
-            }
-        }
-
-        private void RenameWorksheet_Click(object sender, RoutedEventArgs e)
-        {
-            // Simplified rename - in production would use input dialog
-            if (_viewModel.SelectedWorksheet != null)
-            {
-                _viewModel.SelectedWorksheet.Name = "Renamed_" + DateTime.Now.Ticks;
-                _viewModel.SaveChangesCommand.Execute(null);
-            }
-        }
-
-        private void DeleteWorksheet_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Delete functionality would be implemented here", "Delete",
-                MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private void DuplicateWorksheet_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Duplicate functionality would be implemented here", "Duplicate",
-                MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private void RefreshData_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var selected = (TableSelector.SelectedItem as ComboBoxItem)?.Content.ToString();
-                switch (selected)
-                {
-                    case "Workbooks":
-                        ManagementGrid.ItemsSource = _context.Workbooks.ToList();
-                        break;
-                    case "Worksheets":
-                        ManagementGrid.ItemsSource = _context.Worksheets.ToList();
-                        break;
-                    case "Users":
-                        ManagementGrid.ItemsSource = _context.Users.ToList();
-                        break;
-                    case "Cells":
-                        ManagementGrid.ItemsSource = _context.Cells.Take(100).ToList(); // Limit for performance
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error loading data: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void LoadUsersGrid()
-        {
-            try
-            {
-                UsersGrid.ItemsSource = _context.Users.ToList();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error loading users: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void FilterUsers_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var filterText = UserFilter.Text.ToLower();
-                if (string.IsNullOrWhiteSpace(filterText))
-                {
-                    UsersGrid.ItemsSource = _context.Users.ToList();
-                }
-                else
-                {
-                    // Using LINQ to filter users
-                    var filteredUsers = _context.Users
-                        .Where(u => u.Username.ToLower().Contains(filterText))
-                        .ToList();
-                    UsersGrid.ItemsSource = filteredUsers;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error filtering users: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
+        
 
         // Formatting button event handlers
         private void BoldButton_Click(object sender, RoutedEventArgs e)
