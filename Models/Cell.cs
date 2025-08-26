@@ -26,9 +26,9 @@ namespace DoWell.Models
         public int? FormatTemplateId { get; set; }
         public virtual FormatTemplate? FormatTemplate { get; set; }
 
-        // Navigation property for Worksheet
-        public int WorksheetId { get; set; }
-        public virtual Worksheet Worksheet { get; set; } = null!;
+        // Navigation property for Workbook (direct relationship)
+        public int WorkbookId { get; set; }
+        public virtual Workbook Workbook { get; set; } = null!;
 
         public Cell()
         {
@@ -38,7 +38,7 @@ namespace DoWell.Models
             IsUnderline = false;
             BackgroundColor = "#FFFFFF";
             ForegroundColor = "#000000";
-            WorksheetId = 1; // Default worksheet
+            WorkbookId = 1; // Default workbook
         }
     }
 }

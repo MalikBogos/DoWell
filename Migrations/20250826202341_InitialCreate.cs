@@ -58,29 +58,6 @@ namespace DoWell.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Worksheets",
-                columns: table => new
-                {
-                    WorksheetId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    TabOrder = table.Column<int>(type: "int", nullable: false),
-                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ModifiedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    WorkbookId = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Worksheets", x => x.WorksheetId);
-                    table.ForeignKey(
-                        name: "FK_Worksheets_Workbooks_WorkbookId",
-                        column: x => x.WorkbookId,
-                        principalTable: "Workbooks",
-                        principalColumn: "WorkbookId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Cells",
                 columns: table => new
                 {
@@ -95,7 +72,7 @@ namespace DoWell.Migrations
                     BackgroundColor = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ForegroundColor = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     FormatTemplateId = table.Column<int>(type: "int", nullable: true),
-                    WorksheetId = table.Column<int>(type: "int", nullable: false)
+                    WorkbookId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -106,10 +83,10 @@ namespace DoWell.Migrations
                         principalTable: "FormatTemplates",
                         principalColumn: "FormatTemplateId");
                     table.ForeignKey(
-                        name: "FK_Cells_Worksheets_WorksheetId",
-                        column: x => x.WorksheetId,
-                        principalTable: "Worksheets",
-                        principalColumn: "WorksheetId",
+                        name: "FK_Cells_Workbooks_WorkbookId",
+                        column: x => x.WorkbookId,
+                        principalTable: "Workbooks",
+                        principalColumn: "WorkbookId",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -117,6 +94,15 @@ namespace DoWell.Migrations
                 table: "Workbooks",
                 columns: new[] { "WorkbookId", "Author", "CreatedDate", "FilePath", "LastSavedDate", "Name" },
                 values: new object[] { 1, "DoWell User", new DateTime(2025, 1, 1, 12, 0, 0, 0, DateTimeKind.Unspecified), null, new DateTime(2025, 1, 1, 12, 0, 0, 0, DateTimeKind.Unspecified), "Sample Workbook" });
+
+            migrationBuilder.InsertData(
+                table: "Cells",
+                columns: new[] { "CellId", "BackgroundColor", "Column", "ForegroundColor", "FormatTemplateId", "IsBold", "IsItalic", "IsUnderline", "Row", "Value", "WorkbookId" },
+                values: new object[,]
+                {
+                    { 4, "#FFFFFF", 0, "#000000", null, false, false, false, 1, "Laptop", 1 },
+                    { 7, "#FFFFFF", 0, "#000000", null, false, false, false, 2, "Mouse", 1 }
+                });
 
             migrationBuilder.InsertData(
                 table: "FormatTemplates",
@@ -129,26 +115,15 @@ namespace DoWell.Migrations
                 });
 
             migrationBuilder.InsertData(
-                table: "Worksheets",
-                columns: new[] { "WorksheetId", "CreatedDate", "ModifiedDate", "Name", "TabOrder", "WorkbookId" },
-                values: new object[,]
-                {
-                    { 1, new DateTime(2025, 1, 1, 12, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2025, 1, 1, 12, 0, 0, 0, DateTimeKind.Unspecified), "Sheet1", 1, 1 },
-                    { 2, new DateTime(2025, 1, 1, 12, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2025, 1, 1, 12, 0, 0, 0, DateTimeKind.Unspecified), "Sheet2", 2, 1 }
-                });
-
-            migrationBuilder.InsertData(
                 table: "Cells",
-                columns: new[] { "CellId", "BackgroundColor", "Column", "ForegroundColor", "FormatTemplateId", "IsBold", "IsItalic", "IsUnderline", "Row", "Value", "WorksheetId" },
+                columns: new[] { "CellId", "BackgroundColor", "Column", "ForegroundColor", "FormatTemplateId", "IsBold", "IsItalic", "IsUnderline", "Row", "Value", "WorkbookId" },
                 values: new object[,]
                 {
                     { 1, "#4472C4", 0, "#FFFFFF", 1, true, false, false, 0, "Product", 1 },
                     { 2, "#4472C4", 1, "#FFFFFF", 1, true, false, false, 0, "Price", 1 },
                     { 3, "#4472C4", 2, "#FFFFFF", 1, true, false, false, 0, "Quantity", 1 },
-                    { 4, "#FFFFFF", 0, "#000000", null, false, false, false, 1, "Laptop", 1 },
                     { 5, "#F2F2F2", 1, "#0000FF", 2, false, false, false, 1, "999.99", 1 },
                     { 6, "#F2F2F2", 2, "#0000FF", 2, false, false, false, 1, "5", 1 },
-                    { 7, "#FFFFFF", 0, "#000000", null, false, false, false, 2, "Mouse", 1 },
                     { 8, "#F2F2F2", 1, "#0000FF", 2, false, false, false, 2, "29.99", 1 },
                     { 9, "#F2F2F2", 2, "#0000FF", 2, false, false, false, 2, "15", 1 }
                 });
@@ -159,19 +134,14 @@ namespace DoWell.Migrations
                 column: "FormatTemplateId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Cells_WorksheetId_Row_Column",
+                name: "IX_Cells_WorkbookId_Row_Column",
                 table: "Cells",
-                columns: new[] { "WorksheetId", "Row", "Column" },
+                columns: new[] { "WorkbookId", "Row", "Column" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_FormatTemplates_WorkbookId",
                 table: "FormatTemplates",
-                column: "WorkbookId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Worksheets_WorkbookId",
-                table: "Worksheets",
                 column: "WorkbookId");
         }
 
@@ -183,9 +153,6 @@ namespace DoWell.Migrations
 
             migrationBuilder.DropTable(
                 name: "FormatTemplates");
-
-            migrationBuilder.DropTable(
-                name: "Worksheets");
 
             migrationBuilder.DropTable(
                 name: "Workbooks");

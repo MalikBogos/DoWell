@@ -21,8 +21,8 @@ namespace DoWell.Models
         [StringLength(100)]
         public string Author { get; set; } = Environment.UserName;
 
-        // Navigation property for Worksheets
-        public virtual ICollection<Worksheet> Worksheets { get; set; } = new List<Worksheet>();
+        // Navigation property for Cells (direct relationship - geen worksheets meer)
+        public virtual ICollection<Cell> Cells { get; set; } = new List<Cell>();
 
         // Navigation property for Format Templates
         public virtual ICollection<FormatTemplate> FormatTemplates { get; set; } = new List<FormatTemplate>();

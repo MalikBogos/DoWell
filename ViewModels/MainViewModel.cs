@@ -12,7 +12,6 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Windows;
-using System.Windows.Threading;
 
 namespace DoWell.ViewModels
 {
@@ -42,12 +41,6 @@ namespace DoWell.ViewModels
         private Workbook? _currentWorkbook;
 
         [ObservableProperty]
-        private Worksheet? _currentWorksheet;
-
-        [ObservableProperty]
-        private ObservableCollection<Worksheet> _worksheets = new();
-
-        [ObservableProperty]
         private ObservableCollection<FormatTemplate> _formatTemplates = new();
 
         [ObservableProperty]
@@ -61,10 +54,7 @@ namespace DoWell.ViewModels
         public MainViewModel()
         {
             _context = new DoWellContext();
-
-            // Ensure database is created
             _context.Database.EnsureCreated();
-
             InitializeWorkbook();
         }
 
@@ -72,10 +62,8 @@ namespace DoWell.ViewModels
         {
             try
             {
-                // Load or create workbook - gebruik AsNoTracking() voor de display items
                 CurrentWorkbook = _context.Workbooks
-                    .Include(w => w.Worksheets)
-                    .ThenInclude(ws => ws.Cells)
+                    .Include(w => w.Cells)
                     .Include(w => w.FormatTemplates)
                     .FirstOrDefault();
 
@@ -84,40 +72,8 @@ namespace DoWell.ViewModels
                     CurrentWorkbook = CreateNewWorkbook();
                 }
 
-                // Maak echte Worksheet objecten, geen proxies
-                var worksheetList = CurrentWorkbook.Worksheets
-                    .OrderBy(ws => ws.TabOrder)
-                    .Select(ws => new Worksheet
-                    {
-                        WorksheetId = ws.WorksheetId,
-                        Name = ws.Name,
-                        TabOrder = ws.TabOrder,
-                        WorkbookId = ws.WorkbookId,
-                        CreatedDate = ws.CreatedDate,
-                        ModifiedDate = ws.ModifiedDate
-                    })
-                    .ToList();
-
-                Worksheets = new ObservableCollection<Worksheet>(worksheetList);
                 FormatTemplates = new ObservableCollection<FormatTemplate>(CurrentWorkbook.FormatTemplates);
-
-                if (!Worksheets.Any())
-                {
-                    // Create a default worksheet if none exist
-                    var worksheet = new Worksheet
-                    {
-                        Name = "Sheet1",
-                        TabOrder = 1,
-                        WorkbookId = CurrentWorkbook.WorkbookId
-                    };
-                    _context.Worksheets.Add(worksheet);
-                    _context.SaveChanges();
-                    Worksheets.Add(worksheet);
-                }
-
-                CurrentWorksheet = Worksheets.First();
-                LoadWorksheetData();
-
+                LoadWorkbookData();
                 SetStatusMessage("Workbook loaded successfully", true);
             }
             catch (Exception ex)
@@ -140,41 +96,25 @@ namespace DoWell.ViewModels
 
             _context.Workbooks.Add(workbook);
             _context.SaveChanges();
-
-            // Create default worksheet
-            var worksheet = new Worksheet
-            {
-                Name = "Sheet1",
-                TabOrder = 1,
-                WorkbookId = workbook.WorkbookId,
-                CreatedDate = DateTime.Now,
-                ModifiedDate = DateTime.Now
-            };
-
-            _context.Worksheets.Add(worksheet);
-            _context.SaveChanges();
-
-            workbook.Worksheets.Add(worksheet);
-
             return workbook;
         }
 
-        private void LoadWorksheetData()
+        private void LoadWorkbookData()
         {
             try
             {
-                if (CurrentWorksheet == null)
+                if (CurrentWorkbook == null)
                 {
-                    SetStatusMessage("No worksheet selected", false);
+                    SetStatusMessage("No workbook selected", false);
                     return;
                 }
 
                 var allCells = _context.Cells
-                    .Where(c => c.WorksheetId == CurrentWorksheet.WorksheetId)
+                    .Where(c => c.WorkbookId == CurrentWorkbook.WorkbookId)
                     .Include(c => c.FormatTemplate)
                     .ToList();
 
-                // Determine actual grid size from database
+                // Bepaal grid grootte van database
                 if (allCells.Any())
                 {
                     RowCount = Math.Max(allCells.Max(c => c.Row) + 1, 10);
@@ -198,7 +138,7 @@ namespace DoWell.ViewModels
                                   {
                                       Row = row,
                                       Column = col,
-                                      WorksheetId = CurrentWorksheet.WorksheetId,
+                                      WorkbookId = CurrentWorkbook.WorkbookId,
                                       BackgroundColor = "#FFFFFF",
                                       ForegroundColor = "#000000"
                                   };
@@ -208,12 +148,12 @@ namespace DoWell.ViewModels
                     GridData.Add(rowData);
                 }
 
-                SetStatusMessage($"Loaded worksheet: {CurrentWorksheet.Name}", true);
+                SetStatusMessage($"Loaded workbook: {CurrentWorkbook.Name}", true);
             }
             catch (Exception ex)
             {
-                SetStatusMessage($"Error loading worksheet: {ex.Message}", false);
-                MessageBox.Show($"Error loading worksheet data: {ex.Message}", "Error",
+                SetStatusMessage($"Error loading workbook: {ex.Message}", false);
+                MessageBox.Show($"Error loading workbook data: {ex.Message}", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -223,7 +163,6 @@ namespace DoWell.ViewModels
             StatusMessage = message;
             IsStatusSuccess = isSuccess;
 
-            // Auto-clear success messages after 3 seconds
             if (isSuccess)
             {
                 Task.Run(async () =>
@@ -262,19 +201,13 @@ namespace DoWell.ViewModels
         }
 
         [RelayCommand]
-        private void SaveAs()
-        {
-            SaveWorkbook();
-        }
-
-        [RelayCommand]
         private void AddRow()
         {
             try
             {
-                if (CurrentWorksheet == null)
+                if (CurrentWorkbook == null)
                 {
-                    MessageBox.Show("Please select a worksheet first.", "No Worksheet",
+                    MessageBox.Show("Please select a workbook first.", "No Workbook",
                         MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -286,7 +219,7 @@ namespace DoWell.ViewModels
                     {
                         Row = RowCount,
                         Column = col,
-                        WorksheetId = CurrentWorksheet.WorksheetId,
+                        WorkbookId = CurrentWorkbook.WorkbookId,
                         BackgroundColor = "#FFFFFF",
                         ForegroundColor = "#000000"
                     };
@@ -318,9 +251,9 @@ namespace DoWell.ViewModels
 
             try
             {
-                if (CurrentWorksheet == null)
+                if (CurrentWorkbook == null)
                 {
-                    MessageBox.Show("Please select a worksheet first.", "No Worksheet",
+                    MessageBox.Show("Please select a workbook first.", "No Workbook",
                         MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -332,7 +265,7 @@ namespace DoWell.ViewModels
                 {
                     var lastRowIndex = RowCount - 1;
                     var cellsToRemove = _context.Cells
-                        .Where(c => c.WorksheetId == CurrentWorksheet.WorksheetId && c.Row == lastRowIndex)
+                        .Where(c => c.WorkbookId == CurrentWorkbook.WorkbookId && c.Row == lastRowIndex)
                         .ToList();
 
                     _context.Cells.RemoveRange(cellsToRemove);
@@ -357,9 +290,9 @@ namespace DoWell.ViewModels
         {
             try
             {
-                if (CurrentWorksheet == null)
+                if (CurrentWorkbook == null)
                 {
-                    MessageBox.Show("Please select a worksheet first.", "No Worksheet",
+                    MessageBox.Show("Please select a workbook first.", "No Workbook",
                         MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -370,7 +303,7 @@ namespace DoWell.ViewModels
                     {
                         Row = row,
                         Column = ColumnCount,
-                        WorksheetId = CurrentWorksheet.WorksheetId,
+                        WorkbookId = CurrentWorkbook.WorkbookId,
                         BackgroundColor = "#FFFFFF",
                         ForegroundColor = "#000000"
                     };
@@ -380,10 +313,7 @@ namespace DoWell.ViewModels
                 ColumnCount++;
 
                 SaveChangesToDatabase();
-
-                // Notify the view that columns changed
                 ColumnsChanged?.Invoke(this, EventArgs.Empty);
-
                 SetStatusMessage("Column added successfully", true);
             }
             catch (Exception ex)
@@ -405,9 +335,9 @@ namespace DoWell.ViewModels
 
             try
             {
-                if (CurrentWorksheet == null)
+                if (CurrentWorkbook == null)
                 {
-                    MessageBox.Show("Please select a worksheet first.", "No Worksheet",
+                    MessageBox.Show("Please select a workbook first.", "No Workbook",
                         MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -419,7 +349,7 @@ namespace DoWell.ViewModels
                 {
                     var lastColIndex = ColumnCount - 1;
                     var cellsToRemove = _context.Cells
-                        .Where(c => c.WorksheetId == CurrentWorksheet.WorksheetId && c.Column == lastColIndex)
+                        .Where(c => c.WorkbookId == CurrentWorkbook.WorkbookId && c.Column == lastColIndex)
                         .ToList();
 
                     _context.Cells.RemoveRange(cellsToRemove);
@@ -427,14 +357,14 @@ namespace DoWell.ViewModels
 
                     foreach (var row in GridData)
                     {
-                        row.RemoveAt(row.Count - 1);
+                        if (row.Count > lastColIndex)
+                        {
+                            row.RemoveAt(lastColIndex);
+                        }
                     }
 
                     ColumnCount--;
-
-                    // Notify the view that columns changed
                     ColumnsChanged?.Invoke(this, EventArgs.Empty);
-
                     SetStatusMessage("Column removed successfully", true);
                 }
             }
@@ -478,7 +408,6 @@ namespace DoWell.ViewModels
                 {
                     SaveChangesToDatabase();
 
-                    // Create export data WITHOUT circular references
                     var exportData = new
                     {
                         Workbook = new
@@ -489,20 +418,8 @@ namespace DoWell.ViewModels
                             CurrentWorkbook.CreatedDate,
                             CurrentWorkbook.LastSavedDate
                         },
-                        Worksheets = _context.Worksheets
-                            .Where(ws => ws.WorkbookId == CurrentWorkbook!.WorkbookId)
-                            .Select(ws => new
-                            {
-                                ws.WorksheetId,
-                                ws.Name,
-                                ws.TabOrder,
-                                ws.WorkbookId,
-                                ws.CreatedDate,
-                                ws.ModifiedDate
-                            })
-                            .ToList(),
                         Cells = _context.Cells
-                            .Where(c => c.Worksheet.WorkbookId == CurrentWorkbook!.WorkbookId)
+                            .Where(c => c.WorkbookId == CurrentWorkbook!.WorkbookId)
                             .Select(c => new
                             {
                                 c.CellId,
@@ -514,7 +431,7 @@ namespace DoWell.ViewModels
                                 c.IsUnderline,
                                 c.BackgroundColor,
                                 c.ForegroundColor,
-                                c.WorksheetId,
+                                c.WorkbookId,
                                 c.FormatTemplateId
                             })
                             .ToList(),
@@ -593,8 +510,6 @@ namespace DoWell.ViewModels
 
                     var json = File.ReadAllText(openDialog.FileName);
 
-                    // For now, just show a success message
-                    // Full implementation would deserialize and load the data
                     MessageBox.Show(
                         $"File opened successfully!\n\nFile: {Path.GetFileName(openDialog.FileName)}\n\n" +
                         "Note: Full import functionality would deserialize the JSON and load it into the database.",
@@ -610,65 +525,6 @@ namespace DoWell.ViewModels
                 MessageBox.Show($"Error opening workbook: {ex.Message}", "Open Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 SetStatusMessage($"Error opening workbook: {ex.Message}", false);
-            }
-        }
-
-        [RelayCommand]
-        private void AddWorksheet()
-        {
-            try
-            {
-                if (CurrentWorkbook == null)
-                {
-                    MessageBox.Show("No workbook is currently loaded.", "No Workbook",
-                        MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                var dialog = new InputDialog("New Worksheet", "Enter worksheet name:", $"Sheet{Worksheets.Count + 1}");
-                if (dialog.ShowDialog() == true)
-                {
-                    var worksheet = new Worksheet
-                    {
-                        Name = dialog.ResponseText,
-                        WorkbookId = CurrentWorkbook.WorkbookId,
-                        TabOrder = Worksheets.Count + 1,
-                        CreatedDate = DateTime.Now,
-                        ModifiedDate = DateTime.Now
-                    };
-
-                    _context.Worksheets.Add(worksheet);
-                    _context.SaveChanges();
-                    Worksheets.Add(worksheet);
-
-                    SetStatusMessage($"Added worksheet: {worksheet.Name}", true);
-                }
-            }
-            catch (Exception ex)
-            {
-                SetStatusMessage($"Error adding worksheet: {ex.Message}", false);
-                MessageBox.Show($"Error adding worksheet: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        [RelayCommand]
-        private void SwitchWorksheet(Worksheet worksheet)
-        {
-            try
-            {
-                if (worksheet != null && worksheet != CurrentWorksheet)
-                {
-                    SaveChangesToDatabase();
-                    CurrentWorksheet = worksheet;
-                    LoadWorksheetData();
-                }
-            }
-            catch (Exception ex)
-            {
-                SetStatusMessage($"Error switching worksheet: {ex.Message}", false);
-                MessageBox.Show($"Error switching worksheet: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -783,7 +639,6 @@ namespace DoWell.ViewModels
                 "Features:\n" +
                 "• Cell formatting (Bold, Italic, Underline)\n" +
                 "• Background and foreground colors\n" +
-                "• Multiple worksheets\n" +
                 "• Format templates\n" +
                 "• Save/Load workbooks\n\n" +
                 "© 2025 DoWell Project",
@@ -794,7 +649,7 @@ namespace DoWell.ViewModels
 
         private void SaveChangesToDatabase()
         {
-            if (CurrentWorksheet == null) return;
+            if (CurrentWorkbook == null) return;
 
             foreach (var row in GridData)
             {
@@ -804,7 +659,7 @@ namespace DoWell.ViewModels
                     var cell = cellVm.GetCell();
 
                     var existingCell = _context.Cells
-                        .FirstOrDefault(c => c.WorksheetId == CurrentWorksheet.WorksheetId
+                        .FirstOrDefault(c => c.WorkbookId == CurrentWorkbook.WorkbookId
                             && c.Row == cell.Row && c.Column == cell.Column);
 
                     if (existingCell == null)
@@ -812,7 +667,7 @@ namespace DoWell.ViewModels
                         if (!string.IsNullOrEmpty(cell.Value) || cell.IsBold || cell.IsItalic ||
                             cell.IsUnderline || cell.BackgroundColor != "#FFFFFF" || cell.ForegroundColor != "#000000")
                         {
-                            cell.WorksheetId = CurrentWorksheet.WorksheetId;
+                            cell.WorkbookId = CurrentWorkbook.WorkbookId;
                             _context.Cells.Add(cell);
                         }
                     }
@@ -829,7 +684,10 @@ namespace DoWell.ViewModels
                 }
             }
 
-            CurrentWorksheet.ModifiedDate = DateTime.Now;
+            if (CurrentWorkbook != null)
+            {
+                CurrentWorkbook.LastSavedDate = DateTime.Now;
+            }
             _context.SaveChanges();
         }
     }

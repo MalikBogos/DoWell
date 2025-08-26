@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DoWell.Migrations
 {
     [DbContext(typeof(DoWellContext))]
-    [Migration("20250826104427_InitialCreate")]
+    [Migration("20250826202341_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -66,14 +66,14 @@ namespace DoWell.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("WorksheetId")
+                    b.Property<int>("WorkbookId")
                         .HasColumnType("int");
 
                     b.HasKey("CellId");
 
                     b.HasIndex("FormatTemplateId");
 
-                    b.HasIndex("WorksheetId", "Row", "Column")
+                    b.HasIndex("WorkbookId", "Row", "Column")
                         .IsUnique();
 
                     b.ToTable("Cells");
@@ -91,7 +91,7 @@ namespace DoWell.Migrations
                             IsUnderline = false,
                             Row = 0,
                             Value = "Product",
-                            WorksheetId = 1
+                            WorkbookId = 1
                         },
                         new
                         {
@@ -105,7 +105,7 @@ namespace DoWell.Migrations
                             IsUnderline = false,
                             Row = 0,
                             Value = "Price",
-                            WorksheetId = 1
+                            WorkbookId = 1
                         },
                         new
                         {
@@ -119,7 +119,7 @@ namespace DoWell.Migrations
                             IsUnderline = false,
                             Row = 0,
                             Value = "Quantity",
-                            WorksheetId = 1
+                            WorkbookId = 1
                         },
                         new
                         {
@@ -132,7 +132,7 @@ namespace DoWell.Migrations
                             IsUnderline = false,
                             Row = 1,
                             Value = "Laptop",
-                            WorksheetId = 1
+                            WorkbookId = 1
                         },
                         new
                         {
@@ -146,7 +146,7 @@ namespace DoWell.Migrations
                             IsUnderline = false,
                             Row = 1,
                             Value = "999.99",
-                            WorksheetId = 1
+                            WorkbookId = 1
                         },
                         new
                         {
@@ -160,7 +160,7 @@ namespace DoWell.Migrations
                             IsUnderline = false,
                             Row = 1,
                             Value = "5",
-                            WorksheetId = 1
+                            WorkbookId = 1
                         },
                         new
                         {
@@ -173,7 +173,7 @@ namespace DoWell.Migrations
                             IsUnderline = false,
                             Row = 2,
                             Value = "Mouse",
-                            WorksheetId = 1
+                            WorkbookId = 1
                         },
                         new
                         {
@@ -187,7 +187,7 @@ namespace DoWell.Migrations
                             IsUnderline = false,
                             Row = 2,
                             Value = "29.99",
-                            WorksheetId = 1
+                            WorkbookId = 1
                         },
                         new
                         {
@@ -201,7 +201,7 @@ namespace DoWell.Migrations
                             IsUnderline = false,
                             Row = 2,
                             Value = "15",
-                            WorksheetId = 1
+                            WorkbookId = 1
                         });
                 });
 
@@ -339,58 +339,6 @@ namespace DoWell.Migrations
                         });
                 });
 
-            modelBuilder.Entity("DoWell.Models.Worksheet", b =>
-                {
-                    b.Property<int>("WorksheetId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("WorksheetId"));
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("ModifiedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int>("TabOrder")
-                        .HasColumnType("int");
-
-                    b.Property<int>("WorkbookId")
-                        .HasColumnType("int");
-
-                    b.HasKey("WorksheetId");
-
-                    b.HasIndex("WorkbookId");
-
-                    b.ToTable("Worksheets");
-
-                    b.HasData(
-                        new
-                        {
-                            WorksheetId = 1,
-                            CreatedDate = new DateTime(2025, 1, 1, 12, 0, 0, 0, DateTimeKind.Unspecified),
-                            ModifiedDate = new DateTime(2025, 1, 1, 12, 0, 0, 0, DateTimeKind.Unspecified),
-                            Name = "Sheet1",
-                            TabOrder = 1,
-                            WorkbookId = 1
-                        },
-                        new
-                        {
-                            WorksheetId = 2,
-                            CreatedDate = new DateTime(2025, 1, 1, 12, 0, 0, 0, DateTimeKind.Unspecified),
-                            ModifiedDate = new DateTime(2025, 1, 1, 12, 0, 0, 0, DateTimeKind.Unspecified),
-                            Name = "Sheet2",
-                            TabOrder = 2,
-                            WorkbookId = 1
-                        });
-                });
-
             modelBuilder.Entity("DoWell.Models.Cell", b =>
                 {
                     b.HasOne("DoWell.Models.FormatTemplate", "FormatTemplate")
@@ -398,32 +346,21 @@ namespace DoWell.Migrations
                         .HasForeignKey("FormatTemplateId")
                         .OnDelete(DeleteBehavior.NoAction);
 
-                    b.HasOne("DoWell.Models.Worksheet", "Worksheet")
+                    b.HasOne("DoWell.Models.Workbook", "Workbook")
                         .WithMany("Cells")
-                        .HasForeignKey("WorksheetId")
+                        .HasForeignKey("WorkbookId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("FormatTemplate");
 
-                    b.Navigation("Worksheet");
+                    b.Navigation("Workbook");
                 });
 
             modelBuilder.Entity("DoWell.Models.FormatTemplate", b =>
                 {
                     b.HasOne("DoWell.Models.Workbook", "Workbook")
                         .WithMany("FormatTemplates")
-                        .HasForeignKey("WorkbookId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Workbook");
-                });
-
-            modelBuilder.Entity("DoWell.Models.Worksheet", b =>
-                {
-                    b.HasOne("DoWell.Models.Workbook", "Workbook")
-                        .WithMany("Worksheets")
                         .HasForeignKey("WorkbookId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -438,14 +375,9 @@ namespace DoWell.Migrations
 
             modelBuilder.Entity("DoWell.Models.Workbook", b =>
                 {
-                    b.Navigation("FormatTemplates");
-
-                    b.Navigation("Worksheets");
-                });
-
-            modelBuilder.Entity("DoWell.Models.Worksheet", b =>
-                {
                     b.Navigation("Cells");
+
+                    b.Navigation("FormatTemplates");
                 });
 #pragma warning restore 612, 618
         }

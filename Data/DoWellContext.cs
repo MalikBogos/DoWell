@@ -8,7 +8,6 @@ namespace DoWell.Data
     public class DoWellContext : DbContext
     {
         public DbSet<Workbook> Workbooks { get; set; }
-        public DbSet<Worksheet> Worksheets { get; set; }
         public DbSet<Cell> Cells { get; set; }
         public DbSet<FormatTemplate> FormatTemplates { get; set; }
 
@@ -31,17 +30,11 @@ namespace DoWell.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Configure relationships - FIX CASCADE DELETE ISSUE
+            // Configure relationships
             modelBuilder.Entity<Workbook>()
-                .HasMany(w => w.Worksheets)
-                .WithOne(ws => ws.Workbook)
-                .HasForeignKey(ws => ws.WorkbookId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<Worksheet>()
-                .HasMany(ws => ws.Cells)
-                .WithOne(c => c.Worksheet)
-                .HasForeignKey(c => c.WorksheetId)
+                .HasMany(w => w.Cells)
+                .WithOne(c => c.Workbook)
+                .HasForeignKey(c => c.WorkbookId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Workbook>()
@@ -50,16 +43,16 @@ namespace DoWell.Data
                 .HasForeignKey(ft => ft.WorkbookId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // BELANGRIJK: Geen cascade delete voor FormatTemplate -> Cells om cycles te voorkomen
+            // Geen cascade delete voor FormatTemplate -> Cells om cycles te voorkomen
             modelBuilder.Entity<FormatTemplate>()
                 .HasMany(ft => ft.Cells)
                 .WithOne(c => c.FormatTemplate)
                 .HasForeignKey(c => c.FormatTemplateId)
-                .OnDelete(DeleteBehavior.NoAction); // CHANGED FROM SetNull to NoAction
+                .OnDelete(DeleteBehavior.NoAction);
 
-            // Unique constraint for cell position within a worksheet
+            // Unique constraint voor cell positie binnen een workbook
             modelBuilder.Entity<Cell>()
-                .HasIndex(c => new { c.WorksheetId, c.Row, c.Column })
+                .HasIndex(c => new { c.WorkbookId, c.Row, c.Column })
                 .IsUnique();
 
             // Seed data
@@ -74,28 +67,6 @@ namespace DoWell.Data
                     Author = "DoWell User",
                     CreatedDate = seedDate,
                     LastSavedDate = seedDate
-                }
-            );
-
-            // Seed Worksheets
-            modelBuilder.Entity<Worksheet>().HasData(
-                new Worksheet
-                {
-                    WorksheetId = 1,
-                    Name = "Sheet1",
-                    WorkbookId = 1,
-                    TabOrder = 1,
-                    CreatedDate = seedDate,
-                    ModifiedDate = seedDate
-                },
-                new Worksheet
-                {
-                    WorksheetId = 2,
-                    Name = "Sheet2",
-                    WorkbookId = 1,
-                    TabOrder = 2,
-                    CreatedDate = seedDate,
-                    ModifiedDate = seedDate
                 }
             );
 
@@ -146,7 +117,7 @@ namespace DoWell.Data
                     IsBold = true,
                     BackgroundColor = "#4472C4",
                     ForegroundColor = "#FFFFFF",
-                    WorksheetId = 1,
+                    WorkbookId = 1,
                     FormatTemplateId = 1
                 },
                 new Cell
@@ -158,7 +129,7 @@ namespace DoWell.Data
                     IsBold = true,
                     BackgroundColor = "#4472C4",
                     ForegroundColor = "#FFFFFF",
-                    WorksheetId = 1,
+                    WorkbookId = 1,
                     FormatTemplateId = 1
                 },
                 new Cell
@@ -170,7 +141,7 @@ namespace DoWell.Data
                     IsBold = true,
                     BackgroundColor = "#4472C4",
                     ForegroundColor = "#FFFFFF",
-                    WorksheetId = 1,
+                    WorkbookId = 1,
                     FormatTemplateId = 1
                 },
                 new Cell
@@ -181,7 +152,7 @@ namespace DoWell.Data
                     Value = "Laptop",
                     BackgroundColor = "#FFFFFF",
                     ForegroundColor = "#000000",
-                    WorksheetId = 1
+                    WorkbookId = 1
                 },
                 new Cell
                 {
@@ -191,7 +162,7 @@ namespace DoWell.Data
                     Value = "999.99",
                     BackgroundColor = "#F2F2F2",
                     ForegroundColor = "#0000FF",
-                    WorksheetId = 1,
+                    WorkbookId = 1,
                     FormatTemplateId = 2
                 },
                 new Cell
@@ -202,7 +173,7 @@ namespace DoWell.Data
                     Value = "5",
                     BackgroundColor = "#F2F2F2",
                     ForegroundColor = "#0000FF",
-                    WorksheetId = 1,
+                    WorkbookId = 1,
                     FormatTemplateId = 2
                 },
                 new Cell
@@ -213,7 +184,7 @@ namespace DoWell.Data
                     Value = "Mouse",
                     BackgroundColor = "#FFFFFF",
                     ForegroundColor = "#000000",
-                    WorksheetId = 1
+                    WorkbookId = 1
                 },
                 new Cell
                 {
@@ -223,7 +194,7 @@ namespace DoWell.Data
                     Value = "29.99",
                     BackgroundColor = "#F2F2F2",
                     ForegroundColor = "#0000FF",
-                    WorksheetId = 1,
+                    WorkbookId = 1,
                     FormatTemplateId = 2
                 },
                 new Cell
@@ -234,7 +205,7 @@ namespace DoWell.Data
                     Value = "15",
                     BackgroundColor = "#F2F2F2",
                     ForegroundColor = "#0000FF",
-                    WorksheetId = 1,
+                    WorkbookId = 1,
                     FormatTemplateId = 2
                 }
             );

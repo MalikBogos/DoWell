@@ -33,22 +33,6 @@
             </Style.Triggers>
         </Style>
 
-        <!-- Style for color picker buttons -->
-        <Style x:Key="ColorButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="30"/>
-            <Setter Property="Height" Value="30"/>
-            <Setter Property="Margin" Value="2"/>
-            <Setter Property="BorderBrush" Value="Gray"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="BorderBrush" Value="Black"/>
-                    <Setter Property="BorderThickness" Value="2"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
         <!-- Style for DataGrid cells -->
         <Style x:Key="CellStyle" TargetType="DataGridCell">
             <Setter Property="BorderThickness" Value="0.5"/>
@@ -62,41 +46,13 @@
             </Style.Triggers>
         </Style>
 
-        <!-- Tab style -->
-        <Style x:Key="WorksheetTabStyle" TargetType="TabItem">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TabItem">
-                        <Grid>
-                            <Border Name="Border" Margin="0,0,2,0" Background="#F0F0F0" 
-                            BorderBrush="#D0D0D0" BorderThickness="1,1,1,0" CornerRadius="4,4,0,0">
-                                <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" 
-                                        HorizontalAlignment="Center" ContentSource="Header" 
-                                        Margin="12,4"/>
-                            </Border>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="White"/>
-                                <Setter TargetName="Border" Property="BorderBrush" Value="#2196F3"/>
-                                <Setter Property="Panel.ZIndex" Value="100"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="#E8E8E8"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </Window.Resources>
 
     <Window.InputBindings>
         <KeyBinding Command="{Binding SaveWorkbookCommand}" Gesture="Ctrl+S"/>
         <KeyBinding Command="{Binding OpenWorkbookCommand}" Gesture="Ctrl+O"/>
-        <KeyBinding Command="{Binding AddWorksheetCommand}" Gesture="Ctrl+Shift+N"/>
+        <KeyBinding Command="{Binding NewWorkbookCommand}" Gesture="Ctrl+N"/>
     </Window.InputBindings>
 
     <DockPanel>
@@ -106,7 +62,6 @@
                 <MenuItem Header="_New Workbook" Command="{Binding NewWorkbookCommand}" InputGestureText="Ctrl+N"/>
                 <MenuItem Header="_Open..." Command="{Binding OpenWorkbookCommand}" InputGestureText="Ctrl+O"/>
                 <MenuItem Header="_Save" Command="{Binding SaveWorkbookCommand}" InputGestureText="Ctrl+S"/>
-                <MenuItem Header="Save _As..." Command="{Binding SaveAsCommand}"/>
                 <Separator/>
                 <MenuItem Header="E_xit" Click="Exit_Click"/>
             </MenuItem>
@@ -116,7 +71,6 @@
                 <MenuItem Header="_Paste" Command="ApplicationCommands.Paste" InputGestureText="Ctrl+V"/>
                 <Separator/>
                 <MenuItem Header="_Find..." InputGestureText="Ctrl+F"/>
-                <MenuItem Header="_Replace..." InputGestureText="Ctrl+H"/>
             </MenuItem>
             <MenuItem Header="_Format">
                 <MenuItem Header="_Bold" x:Name="MenuBold" Click="BoldButton_Click" InputGestureText="Ctrl+B"/>
@@ -252,7 +206,7 @@
         <!-- Status Bar -->
         <StatusBar DockPanel.Dock="Bottom" Height="25">
             <StatusBarItem>
-                <TextBlock Text="{Binding CurrentWorksheet.Name, StringFormat='Sheet: {0}'}"/>
+                <TextBlock Text="{Binding CurrentWorkbook.Name, StringFormat='Workbook: {0}'}"/>
             </StatusBarItem>
             <Separator/>
             <StatusBarItem>
@@ -282,57 +236,33 @@
             </StatusBarItem>
         </StatusBar>
 
-        <!-- Main Content Area with Tabs -->
-        <TabControl x:Name="WorksheetTabs" ItemsSource="{Binding Worksheets}"
-            SelectedItem="{Binding CurrentWorksheet}"
-            SelectionChanged="WorksheetTabs_SelectionChanged">
-            <TabControl.ItemTemplate>
-                <DataTemplate>
-                    <TextBlock Text="{Binding Name}" Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}">
-                        <TextBlock.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Header="Rename..." Click="RenameWorksheet_Click"/>
-                                <MenuItem Header="Delete" Click="DeleteWorksheet_Click"/>
-                                <Separator/>
-                                <MenuItem Header="Add New Sheet" 
-                                 Command="{Binding PlacementTarget.Tag.AddWorksheetCommand, 
-                                 RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
-                            </ContextMenu>
-                        </TextBlock.ContextMenu>
-                    </TextBlock>
-                </DataTemplate>
-            </TabControl.ItemTemplate>
-            <TabControl.ContentTemplate>
-                <DataTemplate>
-                    <Border Margin="5" BorderBrush="#E0E0E0" BorderThickness="1">
-                        <ScrollViewer HorizontalScrollBarVisibility="Auto" 
-                                    VerticalScrollBarVisibility="Auto">
-                            <DataGrid x:Name="MainDataGrid"
-                                    AutoGenerateColumns="False"
-                                    CanUserAddRows="False"
-                                    CanUserDeleteRows="False"
-                                    GridLinesVisibility="All"
-                                    CellStyle="{StaticResource CellStyle}"
-                                    SelectionMode="Single"
-                                    SelectionUnit="Cell"
-                                    CellEditEnding="DataGrid_CellEditEnding"
-                                    SelectedCellsChanged="DataGrid_SelectedCellsChanged"
-                                    Loaded="DataGrid_Loaded">
-                                <DataGrid.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="Cut" Command="ApplicationCommands.Cut" InputGestureText="Ctrl+X"/>
-                                        <MenuItem Header="Copy" Command="ApplicationCommands.Copy" InputGestureText="Ctrl+C"/>
-                                        <MenuItem Header="Paste" Command="ApplicationCommands.Paste" InputGestureText="Ctrl+V"/>
-                                        <Separator/>
-                                        <MenuItem Header="Format Cell..." Click="FormatCell_Click"/>
-                                        <MenuItem Header="Clear Contents" Click="ClearContents_Click"/>
-                                    </ContextMenu>
-                                </DataGrid.ContextMenu>
-                            </DataGrid>
-                        </ScrollViewer>
-                    </Border>
-                </DataTemplate>
-            </TabControl.ContentTemplate>
-        </TabControl>
+        <!-- Main Content Area - Direct DataGrid (geen tabs meer) -->
+        <Border Margin="5" BorderBrush="#E0E0E0" BorderThickness="1">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" 
+                        VerticalScrollBarVisibility="Auto">
+                <DataGrid x:Name="MainDataGrid"
+                        AutoGenerateColumns="False"
+                        CanUserAddRows="False"
+                        CanUserDeleteRows="False"
+                        GridLinesVisibility="All"
+                        CellStyle="{StaticResource CellStyle}"
+                        SelectionMode="Single"
+                        SelectionUnit="Cell"
+                        CellEditEnding="DataGrid_CellEditEnding"
+                        SelectedCellsChanged="DataGrid_SelectedCellsChanged"
+                        Loaded="DataGrid_Loaded">
+                    <DataGrid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Cut" Command="ApplicationCommands.Cut" InputGestureText="Ctrl+X"/>
+                            <MenuItem Header="Copy" Command="ApplicationCommands.Copy" InputGestureText="Ctrl+C"/>
+                            <MenuItem Header="Paste" Command="ApplicationCommands.Paste" InputGestureText="Ctrl+V"/>
+                            <Separator/>
+                            <MenuItem Header="Format Cell..." Click="FormatCell_Click"/>
+                            <MenuItem Header="Clear Contents" Click="ClearContents_Click"/>
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
+                </DataGrid>
+            </ScrollViewer>
+        </Border>
     </DockPanel>
 </Window>
