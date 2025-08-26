@@ -6,7 +6,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:DoWell.ViewModels"
         mc:Ignorable="d"
-        Title="DoWell - Excel Clone" Height="700" Width="1200"
+        Title="DoWell - Excel Clone" Height="750" Width="1300"
         WindowStartupLocation="CenterScreen">
 
     <Window.DataContext>
@@ -14,7 +14,7 @@
     </Window.DataContext>
 
     <Window.Resources>
-        <!-- Style for buttons -->
+        <!-- Style for toolbar buttons -->
         <Style x:Key="ToolbarButtonStyle" TargetType="Button">
             <Setter Property="Margin" Value="2"/>
             <Setter Property="Padding" Value="10,5"/>
@@ -33,6 +33,22 @@
             </Style.Triggers>
         </Style>
 
+        <!-- Style for color picker buttons -->
+        <Style x:Key="ColorButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="BorderBrush" Value="Gray"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderBrush" Value="Black"/>
+                    <Setter Property="BorderThickness" Value="2"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <!-- Style for DataGrid cells -->
         <Style x:Key="CellStyle" TargetType="DataGridCell">
             <Setter Property="BorderThickness" Value="0.5"/>
@@ -40,52 +56,171 @@
             <Setter Property="Padding" Value="2"/>
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#E3F2FD"/>
-                    <Setter Property="Foreground" Value="Black"/>
+                    <Setter Property="BorderBrush" Value="#2196F3"/>
+                    <Setter Property="BorderThickness" Value="2"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
 
-        <!-- Converter for status message color -->
+        <!-- Tab style -->
+        <Style x:Key="WorksheetTabStyle" TargetType="TabItem">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border Name="Border" Margin="0,0,2,0" Background="#F0F0F0" 
+                                BorderBrush="#D0D0D0" BorderThickness="1,1,1,0" CornerRadius="4,4,0,0">
+                            <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" 
+                                            HorizontalAlignment="Center" ContentSource="Header" 
+                                            Margin="12,4"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="White"/>
+                                <Setter TargetName="Border" Property="BorderBrush" Value="#2196F3"/>
+                                <Setter Property="Panel.ZIndex" Value="100"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </Window.Resources>
 
+    <Window.InputBindings>
+        <KeyBinding Command="{Binding SaveWorkbookCommand}" Gesture="Ctrl+S"/>
+        <KeyBinding Command="{Binding OpenWorkbookCommand}" Gesture="Ctrl+O"/>
+        <KeyBinding Command="{Binding AddWorksheetCommand}" Gesture="Ctrl+Shift+N"/>
+    </Window.InputBindings>
+
     <DockPanel>
-        <!-- Toolbar -->
-        <ToolBar DockPanel.Dock="Top" Height="40">
-            <Button Content="➕ Row" Command="{Binding AddRowCommand}" 
-                    Style="{StaticResource ToolbarButtonStyle}"
-                    ToolTip="Add a new row to the worksheet"/>
-            <Button Content="➖ Row" Command="{Binding RemoveRowCommand}" 
-                    Style="{StaticResource ToolbarButtonStyle}"
-                    ToolTip="Remove the last row from the worksheet"/>
-            <Separator/>
-            <Button Content="➕ Column" Command="{Binding AddColumnCommand}" 
-                    Style="{StaticResource ToolbarButtonStyle}"
-                    ToolTip="Add a new column to the worksheet"/>
-            <Button Content="➖ Column" Command="{Binding RemoveColumnCommand}" 
-                    Style="{StaticResource ToolbarButtonStyle}"
-                    ToolTip="Remove the last column from the worksheet"/>
-            <Separator/>
-            <ToggleButton x:Name="BoldButton" Content="B" FontWeight="Bold" 
-                         Margin="2" Padding="8,5" Width="30"
-                         ToolTip="Make text bold (Ctrl+B)"
-                         Click="BoldButton_Click"/>
-            <ToggleButton x:Name="ItalicButton" Content="I" FontStyle="Italic" 
-                         Margin="2" Padding="8,5" Width="30"
-                         ToolTip="Make text italic (Ctrl+I)"
-                         Click="ItalicButton_Click"/>
-            <ToggleButton x:Name="UnderlineButton" 
-                         Margin="2" Padding="8,5" Width="30"
-                         ToolTip="Underline text (Ctrl+U)"
-                         Click="UnderlineButton_Click">
-                <TextBlock Text="U" TextDecorations="Underline"/>
-            </ToggleButton>
-            <Separator/>
-            <Button Content="💾 Save" Command="{Binding SaveChangesCommand}" 
-                    Style="{StaticResource ToolbarButtonStyle}"
-                    ToolTip="Save changes to database"/>
-        </ToolBar>
+        <!-- Menu Bar -->
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="_New Workbook" Command="{Binding NewWorkbookCommand}" InputGestureText="Ctrl+N"/>
+                <MenuItem Header="_Open..." Command="{Binding OpenWorkbookCommand}" InputGestureText="Ctrl+O"/>
+                <MenuItem Header="_Save" Command="{Binding SaveWorkbookCommand}" InputGestureText="Ctrl+S"/>
+                <MenuItem Header="Save _As..." Command="{Binding SaveAsCommand}"/>
+                <Separator/>
+                <MenuItem Header="E_xit" Click="Exit_Click"/>
+            </MenuItem>
+            <MenuItem Header="_Edit">
+                <MenuItem Header="Cu_t" Command="ApplicationCommands.Cut" InputGestureText="Ctrl+X"/>
+                <MenuItem Header="_Copy" Command="ApplicationCommands.Copy" InputGestureText="Ctrl+C"/>
+                <MenuItem Header="_Paste" Command="ApplicationCommands.Paste" InputGestureText="Ctrl+V"/>
+                <Separator/>
+                <MenuItem Header="_Find..." InputGestureText="Ctrl+F"/>
+                <MenuItem Header="_Replace..." InputGestureText="Ctrl+H"/>
+            </MenuItem>
+            <MenuItem Header="_Format">
+                <MenuItem Header="_Bold" x:Name="MenuBold" Click="BoldButton_Click" InputGestureText="Ctrl+B"/>
+                <MenuItem Header="_Italic" x:Name="MenuItalic" Click="ItalicButton_Click" InputGestureText="Ctrl+I"/>
+                <MenuItem Header="_Underline" x:Name="MenuUnderline" Click="UnderlineButton_Click" InputGestureText="Ctrl+U"/>
+                <Separator/>
+                <MenuItem Header="Create Format _Template..." Command="{Binding CreateFormatTemplateCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="_About DoWell..." Command="{Binding ShowAboutCommand}"/>
+            </MenuItem>
+        </Menu>
+
+        <!-- Main Toolbar -->
+        <ToolBarTray DockPanel.Dock="Top">
+            <ToolBar>
+                <Button Content="📁 Open" Command="{Binding OpenWorkbookCommand}" 
+                        Style="{StaticResource ToolbarButtonStyle}"
+                        ToolTip="Open a workbook (Ctrl+O)"/>
+                <Button Content="💾 Save" Command="{Binding SaveWorkbookCommand}" 
+                        Style="{StaticResource ToolbarButtonStyle}"
+                        ToolTip="Save workbook (Ctrl+S)"/>
+                <Separator/>
+                <Button Content="➕ Row" Command="{Binding AddRowCommand}" 
+                        Style="{StaticResource ToolbarButtonStyle}"
+                        ToolTip="Add a new row to the worksheet"/>
+                <Button Content="➖ Row" Command="{Binding RemoveRowCommand}" 
+                        Style="{StaticResource ToolbarButtonStyle}"
+                        ToolTip="Remove the last row from the worksheet"/>
+                <Separator/>
+                <Button Content="➕ Column" Command="{Binding AddColumnCommand}" 
+                        Style="{StaticResource ToolbarButtonStyle}"
+                        ToolTip="Add a new column to the worksheet"/>
+                <Button Content="➖ Column" Command="{Binding RemoveColumnCommand}" 
+                        Style="{StaticResource ToolbarButtonStyle}"
+                        ToolTip="Remove the last column from the worksheet"/>
+            </ToolBar>
+
+            <!-- Formatting Toolbar -->
+            <ToolBar>
+                <ToggleButton x:Name="BoldButton" Content="B" FontWeight="Bold" 
+                             Margin="2" Padding="8,5" Width="30"
+                             ToolTip="Make text bold (Ctrl+B)"
+                             Click="BoldButton_Click"/>
+                <ToggleButton x:Name="ItalicButton" Content="I" FontStyle="Italic" 
+                             Margin="2" Padding="8,5" Width="30"
+                             ToolTip="Make text italic (Ctrl+I)"
+                             Click="ItalicButton_Click"/>
+                <ToggleButton x:Name="UnderlineButton" 
+                             Margin="2" Padding="8,5" Width="30"
+                             ToolTip="Underline text (Ctrl+U)"
+                             Click="UnderlineButton_Click">
+                    <TextBlock Text="U" TextDecorations="Underline"/>
+                </ToggleButton>
+                <Separator/>
+
+                <!-- Background Color Picker -->
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="BG:" VerticalAlignment="Center"/>
+                    <ComboBox x:Name="BackgroundColorPicker" Width="100" 
+                              SelectedValue="{Binding SelectedBackgroundColor}"
+                              SelectionChanged="BackgroundColorPicker_SelectionChanged">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Rectangle Width="16" Height="16" Fill="{Binding Color}" Margin="0,0,5,0"/>
+                                    <TextBlock Text="{Binding Name}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+
+                <!-- Foreground Color Picker -->
+                <StackPanel Orientation="Horizontal" Margin="5,0,0,0">
+                    <Label Content="FG:" VerticalAlignment="Center"/>
+                    <ComboBox x:Name="ForegroundColorPicker" Width="100"
+                              SelectedValue="{Binding SelectedForegroundColor}"
+                              SelectionChanged="ForegroundColorPicker_SelectionChanged">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Rectangle Width="16" Height="16" Fill="{Binding Color}" Margin="0,0,5,0"/>
+                                    <TextBlock Text="{Binding Name}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+
+                <Separator/>
+
+                <!-- Format Templates -->
+                <Label Content="Templates:" VerticalAlignment="Center"/>
+                <ComboBox Width="120" ItemsSource="{Binding FormatTemplates}" 
+                          DisplayMemberPath="Name"
+                          x:Name="TemplateComboBox"
+                          SelectionChanged="TemplateComboBox_SelectionChanged">
+                    <ComboBox.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Apply Template" Click="ApplyTemplate_Click"/>
+                            <MenuItem Header="Create New Template" Command="{Binding CreateFormatTemplateCommand}"/>
+                        </ContextMenu>
+                    </ComboBox.ContextMenu>
+                </ComboBox>
+                <Button Content="➕" Width="25" Command="{Binding CreateFormatTemplateCommand}"
+                        ToolTip="Create new format template from selected cell"/>
+            </ToolBar>
+        </ToolBarTray>
 
         <!-- Formula Bar -->
         <Grid DockPanel.Dock="Top" Height="30" Background="#F5F5F5">
@@ -96,11 +231,25 @@
             <Label Grid.Column="0" Content="Cell Value:" VerticalAlignment="Center"/>
             <TextBox Grid.Column="1" x:Name="FormulaBar" Margin="5" 
                     Text="{Binding SelectedCell.Value, UpdateSourceTrigger=PropertyChanged}"
-                    VerticalAlignment="Center"/>
+                    VerticalAlignment="Center">
+                <TextBox.ToolTip>
+                    <ToolTip>
+                        <TextBlock>
+                            Enter cell value here
+                            <LineBreak/>
+                            Press Enter to confirm
+                        </TextBlock>
+                    </ToolTip>
+                </TextBox.ToolTip>
+            </TextBox>
         </Grid>
 
         <!-- Status Bar -->
         <StatusBar DockPanel.Dock="Bottom" Height="25">
+            <StatusBarItem>
+                <TextBlock Text="{Binding CurrentWorksheet.Name, StringFormat='Sheet: {0}'}"/>
+            </StatusBarItem>
+            <Separator/>
             <StatusBarItem>
                 <TextBlock Text="{Binding RowCount, StringFormat='Rows: {0}'}"/>
             </StatusBarItem>
@@ -128,29 +277,56 @@
             </StatusBarItem>
         </StatusBar>
 
-        <!-- Main Content - DataGrid -->
-        <Border Margin="5" BorderBrush="#E0E0E0" BorderThickness="1">
-            <ScrollViewer HorizontalScrollBarVisibility="Auto" 
-                        VerticalScrollBarVisibility="Auto">
-                <DataGrid x:Name="MainDataGrid"
-                        AutoGenerateColumns="False"
-                        CanUserAddRows="False"
-                        CanUserDeleteRows="False"
-                        GridLinesVisibility="All"
-                        CellStyle="{StaticResource CellStyle}"
-                        SelectionMode="Single"
-                        SelectionUnit="Cell"
-                        CellEditEnding="DataGrid_CellEditEnding"
-                        SelectedCellsChanged="DataGrid_SelectedCellsChanged">
-                    <DataGrid.ContextMenu>
-                        <ContextMenu>
-                            <MenuItem Header="Cut" InputGestureText="Ctrl+X"/>
-                            <MenuItem Header="Copy" InputGestureText="Ctrl+C"/>
-                            <MenuItem Header="Paste" InputGestureText="Ctrl+V"/>
-                        </ContextMenu>
-                    </DataGrid.ContextMenu>
-                </DataGrid>
-            </ScrollViewer>
-        </Border>
+        <!-- Main Content Area with Tabs -->
+        <TabControl x:Name="WorksheetTabs" ItemsSource="{Binding Worksheets}"
+                    SelectedItem="{Binding CurrentWorksheet}"
+                    SelectionChanged="WorksheetTabs_SelectionChanged">
+            <TabControl.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Name}">
+                        <TextBlock.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Rename..." Click="RenameWorksheet_Click"/>
+                                <MenuItem Header="Delete" Click="DeleteWorksheet_Click"/>
+                                <Separator/>
+                                <MenuItem Header="Add New Sheet" Command="{Binding DataContext.AddWorksheetCommand, 
+                                    RelativeSource={RelativeSource AncestorType=Window}}"/>
+                            </ContextMenu>
+                        </TextBlock.ContextMenu>
+                    </TextBlock>
+                </DataTemplate>
+            </TabControl.ItemTemplate>
+            <TabControl.ContentTemplate>
+                <DataTemplate>
+                    <Border Margin="5" BorderBrush="#E0E0E0" BorderThickness="1">
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" 
+                                    VerticalScrollBarVisibility="Auto">
+                            <DataGrid x:Name="MainDataGrid"
+                                    AutoGenerateColumns="False"
+                                    CanUserAddRows="False"
+                                    CanUserDeleteRows="False"
+                                    GridLinesVisibility="All"
+                                    CellStyle="{StaticResource CellStyle}"
+                                    SelectionMode="Single"
+                                    SelectionUnit="Cell"
+                                    CellEditEnding="DataGrid_CellEditEnding"
+                                    SelectedCellsChanged="DataGrid_SelectedCellsChanged"
+                                    Loaded="DataGrid_Loaded">
+                                <DataGrid.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Cut" Command="ApplicationCommands.Cut" InputGestureText="Ctrl+X"/>
+                                        <MenuItem Header="Copy" Command="ApplicationCommands.Copy" InputGestureText="Ctrl+C"/>
+                                        <MenuItem Header="Paste" Command="ApplicationCommands.Paste" InputGestureText="Ctrl+V"/>
+                                        <Separator/>
+                                        <MenuItem Header="Format Cell..." Click="FormatCell_Click"/>
+                                        <MenuItem Header="Clear Contents" Click="ClearContents_Click"/>
+                                    </ContextMenu>
+                                </DataGrid.ContextMenu>
+                            </DataGrid>
+                        </ScrollViewer>
+                    </Border>
+                </DataTemplate>
+            </TabControl.ContentTemplate>
+        </TabControl>
     </DockPanel>
 </Window>

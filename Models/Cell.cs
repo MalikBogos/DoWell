@@ -18,12 +18,27 @@ namespace DoWell.Models
         public bool IsItalic { get; set; }
         public bool IsUnderline { get; set; }
 
+        // Color properties
+        public string BackgroundColor { get; set; } = "#FFFFFF";
+        public string ForegroundColor { get; set; } = "#000000";
+
+        // Navigation property for Format template
+        public int? FormatTemplateId { get; set; }
+        public virtual FormatTemplate? FormatTemplate { get; set; }
+
+        // Navigation property for Worksheet
+        public int WorksheetId { get; set; }
+        public virtual Worksheet Worksheet { get; set; } = null!;
+
         public Cell()
         {
             Value = "";
             IsBold = false;
             IsItalic = false;
             IsUnderline = false;
+            BackgroundColor = "#FFFFFF";
+            ForegroundColor = "#000000";
+            WorksheetId = 1; // Default worksheet
         }
     }
 }
