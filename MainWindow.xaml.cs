@@ -31,6 +31,23 @@ namespace DoWell
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             InitializeColorPickers();
+
+            // Subscribe to columns changed event
+            if (_viewModel != null)
+            {
+                _viewModel.ColumnsChanged += OnColumnsChanged;
+            }
+        }
+
+        private void OnColumnsChanged(object? sender, EventArgs e)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (_currentDataGrid != null)
+                {
+                    UpdateDataGridColumns();
+                }
+            }));
         }
 
         private void InitializeColorPickers()
@@ -123,22 +140,48 @@ namespace DoWell
             var template = new DataTemplate();
             var factory = new FrameworkElementFactory(typeof(TextBlock));
 
-            factory.SetBinding(TextBlock.TextProperty, new Binding($"[{columnIndex}].Value"));
-            factory.SetBinding(TextBlock.BackgroundProperty, new Binding($"[{columnIndex}].BackgroundBrush"));
-            factory.SetBinding(TextBlock.ForegroundProperty, new Binding($"[{columnIndex}].ForegroundBrush"));
+            // Gebruik een MultiBinding met een converter voor veilige indexing
+            var binding = new Binding($"[{columnIndex}]");
+            binding.FallbackValue = new CellViewModel(new Cell());
 
-            // Apply formatting
+            factory.SetBinding(TextBlock.TextProperty, new Binding($"[{columnIndex}].Value")
+            {
+                FallbackValue = "",
+                TargetNullValue = ""
+            });
+
+            factory.SetBinding(TextBlock.BackgroundProperty, new Binding($"[{columnIndex}].BackgroundBrush")
+            {
+                FallbackValue = Brushes.White,
+                TargetNullValue = Brushes.White
+            });
+
+            factory.SetBinding(TextBlock.ForegroundProperty, new Binding($"[{columnIndex}].ForegroundBrush")
+            {
+                FallbackValue = Brushes.Black,
+                TargetNullValue = Brushes.Black
+            });
+
+            // Apply formatting met fallback values
             factory.SetBinding(TextBlock.FontWeightProperty, new Binding($"[{columnIndex}].IsBold")
             {
-                Converter = new BoolToFontWeightConverter()
+                Converter = new BoolToFontWeightConverter(),
+                FallbackValue = FontWeights.Normal,
+                TargetNullValue = FontWeights.Normal
             });
+
             factory.SetBinding(TextBlock.FontStyleProperty, new Binding($"[{columnIndex}].IsItalic")
             {
-                Converter = new BoolToFontStyleConverter()
+                Converter = new BoolToFontStyleConverter(),
+                FallbackValue = FontStyles.Normal,
+                TargetNullValue = FontStyles.Normal
             });
+
             factory.SetBinding(TextBlock.TextDecorationsProperty, new Binding($"[{columnIndex}].IsUnderline")
             {
-                Converter = new BoolToTextDecorationConverter()
+                Converter = new BoolToTextDecorationConverter(),
+                FallbackValue = null,
+                TargetNullValue = null
             });
 
             factory.SetValue(TextBlock.PaddingProperty, new Thickness(2));
@@ -466,6 +509,12 @@ namespace DoWell
         // Window closing event
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
+            // Unsubscribe from events
+            if (_viewModel != null)
+            {
+                _viewModel.ColumnsChanged -= OnColumnsChanged;
+            }
+
             var result = MessageBox.Show("Do you want to save changes before closing?",
                 "Close DoWell", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
 

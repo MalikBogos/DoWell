@@ -67,17 +67,22 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabItem">
-                        <Border Name="Border" Margin="0,0,2,0" Background="#F0F0F0" 
-                                BorderBrush="#D0D0D0" BorderThickness="1,1,1,0" CornerRadius="4,4,0,0">
-                            <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" 
-                                            HorizontalAlignment="Center" ContentSource="Header" 
-                                            Margin="12,4"/>
-                        </Border>
+                        <Grid>
+                            <Border Name="Border" Margin="0,0,2,0" Background="#F0F0F0" 
+                            BorderBrush="#D0D0D0" BorderThickness="1,1,1,0" CornerRadius="4,4,0,0">
+                                <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" 
+                                        HorizontalAlignment="Center" ContentSource="Header" 
+                                        Margin="12,4"/>
+                            </Border>
+                        </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter TargetName="Border" Property="Background" Value="White"/>
                                 <Setter TargetName="Border" Property="BorderBrush" Value="#2196F3"/>
                                 <Setter Property="Panel.ZIndex" Value="100"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#E8E8E8"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -279,18 +284,19 @@
 
         <!-- Main Content Area with Tabs -->
         <TabControl x:Name="WorksheetTabs" ItemsSource="{Binding Worksheets}"
-                    SelectedItem="{Binding CurrentWorksheet}"
-                    SelectionChanged="WorksheetTabs_SelectionChanged">
+            SelectedItem="{Binding CurrentWorksheet}"
+            SelectionChanged="WorksheetTabs_SelectionChanged">
             <TabControl.ItemTemplate>
                 <DataTemplate>
-                    <TextBlock Text="{Binding Name}">
+                    <TextBlock Text="{Binding Name}" Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}">
                         <TextBlock.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="Rename..." Click="RenameWorksheet_Click"/>
                                 <MenuItem Header="Delete" Click="DeleteWorksheet_Click"/>
                                 <Separator/>
-                                <MenuItem Header="Add New Sheet" Command="{Binding DataContext.AddWorksheetCommand, 
-                                    RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                <MenuItem Header="Add New Sheet" 
+                                 Command="{Binding PlacementTarget.Tag.AddWorksheetCommand, 
+                                 RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                             </ContextMenu>
                         </TextBlock.ContextMenu>
                     </TextBlock>

@@ -23,5 +23,10 @@ namespace DoWell.Models
 
         // Navigation property for Cells
         public virtual ICollection<Cell> Cells { get; set; } = new List<Cell>();
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }

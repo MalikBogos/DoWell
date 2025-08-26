@@ -3,15 +3,16 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DoWell.Data;
 using DoWell.Models;
-using System.Collections.ObjectModel;
-using System.Windows;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
-using Microsoft.Win32;
-using System.IO;
-using System.Text.Json;
 using DoWell.Views;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Win32;
+using System;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+using System.Windows;
+using System.Windows.Threading;
 
 namespace DoWell.ViewModels
 {
@@ -55,6 +56,8 @@ namespace DoWell.ViewModels
         [ObservableProperty]
         private string _selectedForegroundColor = "#000000";
 
+        public event EventHandler? ColumnsChanged;
+
         public MainViewModel()
         {
             _context = new DoWellContext();
@@ -69,7 +72,7 @@ namespace DoWell.ViewModels
         {
             try
             {
-                // Load or create workbook
+                // Load or create workbook - gebruik AsNoTracking() voor de display items
                 CurrentWorkbook = _context.Workbooks
                     .Include(w => w.Worksheets)
                     .ThenInclude(ws => ws.Cells)
@@ -81,7 +84,21 @@ namespace DoWell.ViewModels
                     CurrentWorkbook = CreateNewWorkbook();
                 }
 
-                Worksheets = new ObservableCollection<Worksheet>(CurrentWorkbook.Worksheets.OrderBy(ws => ws.TabOrder));
+                // Maak echte Worksheet objecten, geen proxies
+                var worksheetList = CurrentWorkbook.Worksheets
+                    .OrderBy(ws => ws.TabOrder)
+                    .Select(ws => new Worksheet
+                    {
+                        WorksheetId = ws.WorksheetId,
+                        Name = ws.Name,
+                        TabOrder = ws.TabOrder,
+                        WorkbookId = ws.WorkbookId,
+                        CreatedDate = ws.CreatedDate,
+                        ModifiedDate = ws.ModifiedDate
+                    })
+                    .ToList();
+
+                Worksheets = new ObservableCollection<Worksheet>(worksheetList);
                 FormatTemplates = new ObservableCollection<FormatTemplate>(CurrentWorkbook.FormatTemplates);
 
                 if (!Worksheets.Any())
@@ -362,10 +379,11 @@ namespace DoWell.ViewModels
 
                 ColumnCount++;
 
-                var tempData = new ObservableCollection<ObservableCollection<CellViewModel>>(GridData);
-                GridData = tempData;
-
                 SaveChangesToDatabase();
+
+                // Notify the view that columns changed
+                ColumnsChanged?.Invoke(this, EventArgs.Empty);
+
                 SetStatusMessage("Column added successfully", true);
             }
             catch (Exception ex)
@@ -414,8 +432,8 @@ namespace DoWell.ViewModels
 
                     ColumnCount--;
 
-                    var tempData = new ObservableCollection<ObservableCollection<CellViewModel>>(GridData);
-                    GridData = tempData;
+                    // Notify the view that columns changed
+                    ColumnsChanged?.Invoke(this, EventArgs.Empty);
 
                     SetStatusMessage("Column removed successfully", true);
                 }
