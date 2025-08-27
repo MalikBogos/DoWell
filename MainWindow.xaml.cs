@@ -91,26 +91,23 @@ namespace DoWell
                 if (_viewModel == null || _viewModel.GridData == null || _viewModel.GridData.Count == 0)
                     return;
 
-                // Clear the ItemsSource FIRST to disconnect all bindings
                 MainDataGrid.ItemsSource = null;
-
-                // Then clear columns
                 MainDataGrid.Columns.Clear();
 
-                // Add row header column
+                // Add row header column with a simpler binding
                 var rowHeaderColumn = new DataGridTextColumn
                 {
                     Header = "",
                     Width = 40,
                     IsReadOnly = true,
-                    Binding = new Binding("[0]")
+                    Binding = new Binding("[0].Row")
                     {
-                        Converter = new RowNumberConverter()
+                        Converter = new SimpleRowNumberConverter()
                     }
                 };
                 MainDataGrid.Columns.Add(rowHeaderColumn);
 
-                // Add data columns - ALLEEN voor bestaande kolommen
+                // Rest of the method stays the same...
                 for (int col = 0; col < _viewModel.ColumnCount; col++)
                 {
                     var column = new DataGridTemplateColumn
@@ -123,13 +120,29 @@ namespace DoWell
                     MainDataGrid.Columns.Add(column);
                 }
 
-                // Set ItemsSource LAST after columns are properly configured
                 MainDataGrid.ItemsSource = _viewModel.GridData;
             }
             catch (Exception ex)
             {
                 _viewModel.StatusMessage = $"Error updating columns: {ex.Message}";
                 _viewModel.IsStatusSuccess = false;
+            }
+        }
+
+        public class SimpleRowNumberConverter : IValueConverter
+        {
+            public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+            {
+                if (value is int rowIndex)
+                {
+                    return (rowIndex + 1).ToString();
+                }
+                return "1";
+            }
+
+            public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+            {
+                throw new NotImplementedException();
             }
         }
 
