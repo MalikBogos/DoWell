@@ -348,6 +348,21 @@ namespace DoWell.ViewModels
                 if (result == MessageBoxResult.Yes)
                 {
                     var lastColIndex = ColumnCount - 1;
+
+                    // Create a new GridData collection instead of modifying the existing one
+                    var newGridData = new ObservableCollection<ObservableCollection<CellViewModel>>();
+
+                    for (int row = 0; row < RowCount; row++)
+                    {
+                        var newRow = new ObservableCollection<CellViewModel>();
+                        for (int col = 0; col < lastColIndex; col++)
+                        {
+                            newRow.Add(GridData[row][col]);
+                        }
+                        newGridData.Add(newRow);
+                    }
+
+                    // Remove from database
                     var cellsToRemove = _context.Cells
                         .Where(c => c.WorkbookId == CurrentWorkbook.WorkbookId && c.Column == lastColIndex)
                         .ToList();
@@ -355,16 +370,15 @@ namespace DoWell.ViewModels
                     _context.Cells.RemoveRange(cellsToRemove);
                     _context.SaveChanges();
 
-                    foreach (var row in GridData)
-                    {
-                        if (row.Count > lastColIndex)
-                        {
-                            row.RemoveAt(lastColIndex);
-                        }
-                    }
-
+                    // Update column count first
                     ColumnCount--;
+
+                    // Replace GridData entirely - this forces complete rebinding
+                    GridData = newGridData;
+
+                    // Trigger columns changed
                     ColumnsChanged?.Invoke(this, EventArgs.Empty);
+
                     SetStatusMessage("Column removed successfully", true);
                 }
             }

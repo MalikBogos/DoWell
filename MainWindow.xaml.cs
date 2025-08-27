@@ -39,6 +39,11 @@ namespace DoWell
         {
             Dispatcher.BeginInvoke(new Action(() =>
             {
+                // Clear columns first to remove old bindings
+                MainDataGrid.Columns.Clear();
+                MainDataGrid.ItemsSource = null;
+
+                // Then rebuild
                 UpdateDataGridColumns();
             }));
         }
@@ -86,8 +91,11 @@ namespace DoWell
                 if (_viewModel == null || _viewModel.GridData == null || _viewModel.GridData.Count == 0)
                     return;
 
-                MainDataGrid.Columns.Clear();
+                // Clear the ItemsSource FIRST to disconnect all bindings
                 MainDataGrid.ItemsSource = null;
+
+                // Then clear columns
+                MainDataGrid.Columns.Clear();
 
                 // Add row header column
                 var rowHeaderColumn = new DataGridTextColumn
@@ -115,6 +123,7 @@ namespace DoWell
                     MainDataGrid.Columns.Add(column);
                 }
 
+                // Set ItemsSource LAST after columns are properly configured
                 MainDataGrid.ItemsSource = _viewModel.GridData;
             }
             catch (Exception ex)
