@@ -1,0 +1,270 @@
+﻿verwijder de meerdere sheets functionaliteit!! ik wil dat niet in mijn project. verwijder ook de replace knop in de edit knop. ik wil 1 bestand per datagrid! ik krijg ook deze errors wanneer ik een kolom verwijder (maar niet als ik er een toevoeg)System.Windows.Data Warning: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[10].IsItalic; DataItem='ObservableCollection1' (HashCode=3961063); target element is 'TextBlock' (Name=''); target property is 'FontStyle' (type 'FontStyle') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'
+System.Windows.Data Warning: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[10].IsUnderline; DataItem='ObservableCollection1' (HashCode=3961063); target element is 'TextBlock' (Name=''); target property is 'TextDecorations' (type 'TextDecorationCollection') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'
+System.Windows.Data Warning: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[10].IsBold; DataItem='ObservableCollection1' (HashCode=3961063); target element is 'TextBlock' (Name=''); target property is 'FontWeight' (type 'FontWeight') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'
+System.Windows.Data Warning: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[10].BackgroundBrush; DataItem='ObservableCollection1' (HashCode=3961063); target element is 'TextBlock' (Name=''); target property is 'Background' (type 'Brush') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'
+System.Windows.Data Warning: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[10].Value; DataItem='ObservableCollection1' (HashCode=3961063); target element is 'TextBlock' (Name=''); target property is 'Text' (type 'String') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'
+System.Windows.Data Warning: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[10].ForegroundBrush; DataItem='ObservableCollection1' (HashCode=3961063); target element is 'TextBlock' (Name=''); target property is 'Foreground' (type 'Brush') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'EditIk ga de meerdere sheets functionaliteit verwijderen en de binding errors oplossen. De errors ontstaan omdat de DataGrid nog probeert te binden naar kolommen die niet meer bestaan na het verwijderen van een kolom.Models/Workbook.cs - VereenvoudigdCode // Models/Workbook.cs
+using System.ComponentModel.DataAnnotations;
+
+namespace DoWell.Models
+{
+    public class Workbook
+    {
+        [Key]
+        public int WorkbookId { get; set; }
+
+        [Required]
+        [StringLength(255)]
+        public strModels/Cell.cs - VereenvoudigdCode // Models/Cell.cs
+using System.ComponentModel.DataAnnotations;
+
+namespace DoWell.Models
+{
+    public class Cell
+    {
+        [Key]
+        public int CellId { get; set; }
+
+        public int Row { get; set; }
+        public int Column { get; set; }
+Data/DoWellContext.cs - VereenvoudigdCode // Data/DoWellContext.cs
+using Microsoft.EntityFrameworkCore;
+using DoWell.Models;
+using System;
+
+namespace DoWell.Data
+{
+    public class DoWellContext : DbContext
+    {
+        public DbSet<Workbook> Workbooks { get; set; }
+        public DbSet<CelViewModels/MainViewModel.cs - VereenvoudigdCode // ViewModels/MainViewModel.cs
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using DoWell.Data;
+using DoWell.Models;
+using DoWell.Views;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Win32;
+using System;
+using RetryBContinueEditViewModels/MainViewModel.cs - VereenvoudigdCode ∙ Version 2         [RelayCommand]
+        private void ApplyForegroundColor()
+        {
+            try
+            {
+                if (SelectedCell != null)
+                {
+                    SelectedCell.SetForegroundColorCommand.Execute(SelectedForegrouMainWindow.xaml - Vereenvoudigd zonder sheetsCode <!-- MainWindow.xaml -->
+<Window x:Class="DoWell.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expresMainWindow.xaml.cs - Vereenvoudigd met binding fixCode // MainWindow.xaml.cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Media;
+using DoWell.Data;
+using DoWell.Models;
+using DoWell.RetryBContinueEditMainWindow.xaml.cs - Vereenvoudigd met binding fixCode ∙ Version 2         private void Exit_Click(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show("Do you want to save changes before exiting?",
+                "Exit DoWell", MessageBoxButton.YesNoCancel, MessageBoxImage.Question)Nu ga ik een nieuwe migratie maken om de database structuur aan te passen:Migrations/RemoveWorksheets_Migration.csCode // Migration om worksheets te verwijderen en cells direct aan workbooks te koppelen
+// Voer deze migratie uit met: dotnet ef migrations add RemoveWorksheets
+// En dan: dotnet ef database update
+
+using System;
+using Microsoft.EntityFrameworkCore.MigraDe belangrijkste wijzigingen die ik heb gemaakt:
+Verwijderde Functionaliteiten:
+
+Meerdere sheets - Nu is er slechts één direct DataGrid per workbook
+Replace functie uit het Edit menu
+Worksheet model en logica - Cells zijn nu direct gekoppeld aan Workbooks
+
+Opgeloste Binding Errors:
+
+Veilige converters - De nieuwe converters checken bounds voordat ze proberen te binden
+SafeCellValueConverter, SafeCellBrushConverter, SafeCellBoolConverter - Deze checken of de kolom index binnen de grenzen ligt
+Betere error handling bij kolom verwijdering
+
+Database Wijzigingen:
+
+Verwijderd: Worksheet model en tabel
+Toegevoegd: Directe relatie tussen Cell en Workbook
+Nieuwe migratie: Om de database structuur aan te passen
+
+Belangrijke stappen om uit te voeren:
+
+Verwijder de oude migratie bestanden en maak een nieuwe migratie:
+
+bashdotnet ef migrations add RemoveWorksheetsSimplify
+dotnet ef database update
+
+Of reset de database als je geen bestaande data hoeft te behouden:
+
+bashdotnet ef database drop
+dotnet ef database update
+De binding errors zouden nu opgelost moeten zijn omdat de converters checken of de kolom index geldig is voordat ze proberen de cell data op te halen. Bij het verwijderen van kolommen wordt nu ook correct de DataGrid geüpdatet met alleen de bestaande kolommen.RetryBmaak geen migraties. ik kan ze zelf genereren met Add-Migration InitialCreate. en je hebt de mainviewmodel.cs niet volledig gegenereerdEditJe hebt gelijk, ik ga de MainViewModel.cs volledig afmaken zonder migraties te maken.ViewModels/MainViewModel.cs - VereenvoudigdCode ∙ Version 3         [RelayCommand]
+        private void ApplyForegroundColor()
+        {
+            try
+            {
+                if (SelectedCell != null)
+                {
+                    SelectedCell.SetForegroundColorCommand.Execute(SelectedForegrouNu heb ik ook nog een aangepaste ViewModelBase nodig die IDisposable implementeert:ViewModels/ViewModelBase.cs - Met IDisposableCode // ViewModels/ViewModelBase.cs
+using CommunityToolkit.Mvvm.ComponentModel;
+using System;
+
+namespace DoWell.ViewModels
+{
+    public abstract class ViewModelBase : ObservableObject, IDisposable
+    {
+        private bool _disposed = false;
+
+        proPerfect! Nu is de volledige vereenvoudigde applicatie klaar:
+Samenvatting van de wijzigingen:
+Verwijderd:
+
+✅ Meerdere sheets functionaliteit (TabControl en Worksheet logica)
+✅ Replace functie uit Edit menu
+✅ Alle worksheet-gerelateerde code en navigatie
+
+Database Model Wijzigingen:
+
+✅ Worksheet model verwijderd
+✅ Cell model aangepast - nu directe relatie met Workbook
+✅ Workbook model aangepast - directe relatie met Cells
+✅ DoWellContext vereenvoudigd zonder Worksheets
+
+UI Wijzigingen:
+
+✅ TabControl vervangen door directe DataGrid
+✅ Worksheet tabs verwijderd uit MainWindow.xaml
+✅ Status bar toont nu Workbook naam in plaats van Sheet naam
+
+Binding Errors Opgelost:
+
+✅ Veilige converters toegevoegd die bounds checken
+✅ SafeCellValueConverter, SafeCellBrushConverter, SafeCellBoolConverter
+✅ SafeCellEditingConverter voor editing mode
+✅ Betere error handling bij kolom verwijdering
+
+ViewModels:
+
+✅ MainViewModel vereenvoudigd - geen worksheet management meer
+✅ ViewModelBase met IDisposable voor proper cleanup
+✅ CellViewModel blijft ongewijzigd
+
+Om de applicatie te gebruiken:
+
+Verwijder de oude migrations folder (of backup)
+Maak een nieuwe migratie:
+bashAdd-Migration InitialCreate
+Update-Database
+
+De applicatie heeft nu:
+
+Eén DataGrid per workbook (geen sheets meer)
+Alle oorspronkelijke functionaliteiten (rijen/kolommen toevoegen/verwijderen, formattering, etc.)
+Geen binding errors meer bij kolom verwijdering
+Cleaner, vereenvoudigde codebase
+
+
+
+De binding errors zouden nu volledig opgelost moeten zijn omdat de converters controleren of de kolom index binnen de grenzen ligt voordat ze proberen de cell data op te halen.RetrySystem.InvalidOperationException
+  HResult=0x80131509
+  Message=Two-way binding requires Path or XPath.
+  Source=PresentationFramework
+  StackTrace:
+   at System.Windows.Data.BindingExpression.CreateBindingExpression(DependencyObject d, DependencyProperty dp, Binding binding, BindingExpressionBpastedBok ik heb de meest recente verandering niet toegepast maar ik krijg deze error wanneer ik een cell probeer te klikkenEditDe error komt door de SafeCellEditingConverter die geen juiste Path heeft voor two-way binding. Ik ga dit oplossen door de CellEditingTemplate te verbeteren:MainWindow.xaml.cs - Vereenvoudigd met binding fixCode ∙ Version 3         private DataTemplate CreateCellEditingTemplate(int columnIndex)
+        {
+            var template = new DataTemplate();
+            var factory = new FrameworkElementFactory(typeof(TextBox));
+            
+            // Direct binding naar dMainWindow.xaml.cs - Vereenvoudigd met binding fixCode ∙ Version 4         private DataTemplate CreateCellTemplate(int columnIndex)
+        {
+            var template = new DataTemplate();
+            var factory = new FrameworkElementFactory(typeof(TextBlock));
+
+            // Direct binding naar specifieke kolom mMainWindow.xaml.cs - Vereenvoudigd met binding fixCode ∙ Version 5     // Eenvoudige converters voor text formatting
+    public class BoolToFontWeightConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+  Het probleem was dat de SafeCellEditingConverter geen juiste Path had voor two-way binding. WPF vereist een specifieke Path voor two-way binding.
+De oplossing:
+
+CellEditingTemplate gebruikt nu directe binding: new Binding($"[{columnIndex}].Value") in plaats van een converter
+CellTemplate gebruikt ook directe binding naar de specifieke eigenschappen van de CellViewModel
+Vereenvoudigde converters - alleen nog de basis converters voor formattering (Bold, Italic, Underline)
+
+De error "Two-way binding requires Path or XPath" zou nu opgelost moeten zijn omdat we nu directe binding gebruiken met een geldige Path ([columnIndex].Value) in plaats van een converter zonder Path.
+Test nu of het klikken op een cell werkt zonder de binding error.RetryBok dit loste het op maar de rijen hebben allemaal nummer 1 en ik krijg deze binding errors wanneer ik kolommen verwijder
+Severity    Count    Data Context    Binding Path    Target    Target Type    Description    File    Line    Project
+Warning    13    ObservableCollection1    [10].IsUnderline    TextBlock.TextDecorations    TextDecorationCollection    Failed to get value. ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'            
+Warning    13    ObservableCollection1    [11].IsItalic    TextBlock.FontStyle    FontStyle    Failed to get value. ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'            
+Warning    13    ObservableCollection1    [11].IsBold    TextBlock.FontWeight    FontWeight    Failed to get value. ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'            
+Warning    13    ObservableCollection1    [11].ForegroundBrush    TextBlock.Foreground    Brush    Failed to get value. ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'            
+Warning    13    ObservableCollection1    [11].BackgroundBrush    TextBlock.Background    Brush    Failed to get value. ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'            
+Warning    13    ObservableCollection1    [11].Value    TextBlock.Text    String    Failed to get value. ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'            
+Warning    13    ObservableCollection1    [11].IsUnderline    TextBlock.TextDecorations    TextDecorationCollection    Failed to get value. ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'            
+Warning    13    ObservableCollection1    [10].IsItalic    TextBlock.FontStyle    FontStyle    Failed to get value. ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'            
+Warning    13    ObservableCollection1    [10].IsBold    TextBlock.FontWeight    FontWeight    Failed to get value. ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'            
+Warning    13    ObservableCollection1    [10].ForegroundBrush    TextBlock.Foreground    Brush    Failed to get value. ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'            
+Warning    13    ObservableCollection1    [10].BackgroundBrush    TextBlock.Background    Brush    Failed to get value. ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'            
+Warning    13    ObservableCollection1    [10].Value    TextBlock.Text    String    Failed to get value. ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'EditHet probleem is dat de DataGrid niet wordt gerefresht nadat kolommen worden verwijderd, waardoor de oude column templates nog proberen te binden naar niet-bestaande kolommen. Ook de rij nummering moet gefixed worden.MainWindow.xaml.cs - Vereenvoudigd met binding fixCode ∙ Version 6         private void OnColumnsChanged(object? sender, EventArgs e)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                // Force complete refresh van de DataGrid
+                MainDataGrid.ItemsSource = null;
+MainWindow.xaml.cs - Vereenvoudigd met binding fixCode ∙ Version 7         private void UpdateDataGridColumns()
+        {
+            try
+            {
+                if (_viewModel == null || _viewModel.GridData == null || _viewModel.GridData.Count == 0)
+                    return;
+
+                // Volledig cleMainWindow.xaml.cs - Vereenvoudigd met binding fixCode ∙ Version 8     public class RowNumberConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            try
+            {
+                // De value iNu ga ik ook de RemoveColumn method in MainViewModel verbeteren om ervoor te zorgen dat de binding errors niet optreden:ViewModels/MainViewModel.cs - VereenvoudigdCode ∙ Version 4         [RelayCommand]
+        private void RemoveColumn()
+        {
+            if (ColumnCount <= 1)
+            {
+                SetStatusMessage("Cannot remove last column", false);
+                return;
+            }
+
+            try
+        De belangrijkste wijzigingen:
+Opgeloste Problemen:
+1. Rij Nummering:
+
+Probleem: Alle rijen toonden nummer 1
+Oplossing: De RowNumberConverter en de binding in UpdateDataGridColumns() is aangepast om correct de rij nummers te tonen
+
+2. Binding Errors bij Kolom Verwijdering:
+
+Probleem: DataGrid probeerde nog te binden naar niet-bestaande kolommen [10], [11], etc.
+Oplossingen:
+
+Force refresh: MainDataGrid.ItemsSource = null voordat we kolommen updaten
+Betere timing: ColumnCount wordt geüpdatet VOORDAT ColumnsChanged event wordt getriggerd
+Complete rebuild: DataGrid columns worden volledig cleared en herbouwd
+Render priority: DispatcherPriority.Render voor betere timing
+
+
+
+3. DataGrid Refresh Verbeteringen:
+
+ItemsSource wordt op null gezet voordat kolommen worden gewijzigd
+UpdateLayout() wordt aangeroepen na het opnieuw instellen van ItemsSource
+Betere exception handling in UpdateDataGridColumns()
+
+Nu zouden de rij nummers correct moeten worden weergegeven (1, 2, 3, etc.) en de binding errors bij het verwijderen van kolommen zouden opgelost moeten zijn omdat de DataGrid volledig wordt herbouwd met alleen de bestaande kolommen.

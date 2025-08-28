@@ -1,0 +1,43 @@
+﻿kan je deze binding errors oplossen. ik zie in elke rij ook nummer 1EditIk zie het probleem. De binding errors ontstaan omdat de DataGrid probeert kolom 11 (index 11) te binden terwijl er maar 10 kolommen zijn (index 0-9). Ook zie je overal nummer 1 in de row headers omdat de RowNumberConverter niet correct werkt.
+Hier zijn de fixes:UntitledText         private void UpdateDataGridColumns()
+        {
+            try
+            {
+                if (_viewModel == null || _viewModel.GridData == null || _viewModel.GridData.Count == 0)
+                    return;
+
+                MainDataGrid.CoUntitledText ∙ Version 2     public class RowNumberDisplayConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            try
+            {
+                if (vaNu moeten we ook de DataGrid configuratie aanpassen om virtualization uit te schakelen voor kolommen, wat de binding errors kan helpen voorkomen:UntitledInteractive artifact De belangrijkste wijzigingen die ik heb aangebracht:
+
+Row Header Template Fix:
+
+Nieuwe CreateRowHeaderTemplate() methode die een DataTemplate gebruikt in plaats van een TextColumn
+Nieuwe RowNumberDisplayConverter die direct de Row property converteert naar een display waarde (Row + 1)
+
+
+Virtualization uitgeschakeld:
+
+EnableColumnVirtualization="False" toegevoegd
+EnableRowVirtualization="False" toegevoegd
+Dit voorkomt dat WPF kolommen probeert te virtualiseren die niet bestaan
+
+
+Betere binding:
+
+De row header bindt nu direct naar [0].Row (de Row property van de eerste cell)
+De converter krijgt nu een integer waarde in plaats van een hele collection
+
+
+
+Dit zou de binding errors moeten oplossen. De errors ontstonden omdat:
+
+WPF probeerde kolom index 11 te binden terwijl er maar 10 kolommen zijn (0-9)
+De row number converter kreeg de verkeerde data type
+Virtualization kan zorgen voor binding pogingen naar niet-bestaande kolommen
+
+Na deze wijzigingen zou je de correcte rijnummers moeten zien (1, 2, 3, etc.) en geen binding errors meer in de output.

@@ -1,0 +1,460 @@
+﻿System.Windows.Data Error: 4 : Cannot find source for binding with reference 'RelativeSource FindAncestor, AncestorType='System.Windows.Window', AncestorLevel='1''. BindingExpression:Path=DataContext.AddWorksheetCommand; DataItem=null; target element is 'MenuItem' (Name=''); target property is 'Command' (type 'ICommand')ik krijg deze errorEditLooking at your error, the issue is that the ContextMenu in your DataTemplate can't find the Window's DataContext because ContextMenus exist outside the visual tree. This is a common WPF binding issue.
+Here's the fix for your MainWindow.xaml:UntitledInteractive artifact The solution works by:
+
+Storing the Window's DataContext in the Tag property of the TextBlock: Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
+Accessing it through PlacementTarget in the ContextMenu: Command="{Binding PlacementTarget.Tag.AddWorksheetCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+
+This is necessary because:
+
+ContextMenus are rendered in a separate visual tree (popup window)
+They can't directly access the main window's visual tree using RelativeSource
+The PlacementTarget property gives us access to the element that opened the context menu (the TextBlock)
+We stored the Window's DataContext in the TextBlock's Tag property, so we can access it via PlacementTarget.Tag
+
+This is a standard WPF pattern for handling ContextMenu bindings in DataTemplates. The error should now be resolved and your "Add New Sheet" context menu command should work properly.
+Alternative solutions include:
+
+Using a Freezable proxy object
+Setting the ContextMenu's DataContext explicitly in code-behind
+Using attached properties
+
+But the Tag approach is the simplest and most commonly used solution for this scenario.RetryBer zijn nog 2 problemen: wanneer ik een kolom aanmaak staat er onderaan de app wel dat het is gelukt en het kolomaantal gaat naar boven maar ik kan het niet zien. dus als ik letter j als laatste kolom heb en een nieuwe aanmaak dan zie ik niet kolom k. 
+en
+ik 'kan' wel het bestand opslaan, maar wanneer het vraagt om op te slaan moet ik kiezen waar ipv dat het automatisch het bestand opslaat op de locatie waar het al is opgeslaan. 
+er staat ook file opened succesfully! file: sample workbook.dwl
+note full import functionality would deserialize the json and load it into the databaseEditIk zie de problemen. Laten we beide oplossen:
+
+Kolommen worden niet zichtbaar na toevoegen - De DataGrid columns worden niet bijgewerkt
+Save vs Save As functionaliteit - Er is geen onderscheid tussen Save en Save As
+Open functionaliteit is niet geïmplementeerd - Het bestand wordt niet echt ingeladen
+
+Hier zijn de fixes:UntitledText         [RelayCommand]
+        private void AddColumn()
+        {
+            try
+            {
+                if (CurrentWorksheet == null)
+                {
+                    MessageBox.Show("Please select a worksheet first.", "No Worksheet",
+  UntitledText ∙ Version 2         [RelayCommand]
+        private void RemoveColumn()
+        {
+            if (ColumnCount <= 1)
+            {
+                SetStatusMessage("Cannot remove last column", false);
+                return;
+            }
+
+            try
+        UntitledText ∙ Version 3         [RelayCommand]
+        private void SaveWorkbook()
+        {
+            try
+            {
+                SaveChangesToDatabase();
+
+                // If file already has a path, save directly
+                if (!string.IsNullOrEmpty(CurrenNu voor de Open functionaliteit:UntitledText ∙ Version 4         [RelayCommand]
+        private void OpenWorkbook()
+        {
+            try
+            {
+                var openDialog = new OpenFileDialog
+                {
+                    Filter = "DoWell Files (*.dwl)|*.dwl|JSON Files (*.json)|*.jsDe belangrijkste wijzigingen:
+1. Kolommen probleem opgelost:
+
+Na AddColumn en RemoveColumn wordt nu UpdateDataGridColumns() aangeroepen via Dispatcher.BeginInvoke
+Dit forceert de DataGrid om de kolommen opnieuw te renderen
+
+2. Save vs Save As:
+
+SaveWorkbook: Controleert of er al een FilePath is
+
+Als ja: slaat direct op naar dat bestand
+Als nee: roept SaveAs aan
+
+
+SaveAs: Toont altijd de SaveFileDialog
+Nieuwe helper methode SaveToFile: Bevat de logica voor het werkelijk opslaan
+
+3. Open functionaliteit verbeterd:
+
+Het bestand wordt nu werkelijk gelezen
+De oude data wordt verwijderd uit de database
+Het filepath wordt opgeslagen voor toekomstige saves
+(Volledige deserialisatie zou meer werk vereisen maar de structuur is er)
+
+Nu zou:
+
+Bij klik op Save (Ctrl+S): Het bestand direct opslaan als het al een locatie heeft
+Bij klik op Save As: Altijd vragen waar op te slaan
+Kolommen toevoegen/verwijderen: Direct zichtbaar zijn in de UI
+Open: Het bestand laden (basis implementatie)
+
+Deze aanpassingen zorgen voor een meer Excel-achtige ervaring!RetryBok, ik wil dat je op deze manier de code blijft aanpassen in plaats van het hele bestand opnieuw te genereren. maar vermeld steeds bij welk bestand deze code hoortEditPerfect! Ik zal vanaf nu alleen de specifieke wijzigingen tonen met duidelijke vermelding van het bestand. Dit is inderdaad veel efficiënter en overzichtelijker.
+Voor de volledigheid, de wijzigingen die ik net heb gemaakt waren voor:
+
+MainWindow.xaml - Voor de ContextMenu binding fix
+ViewModels/MainViewModel.cs - Voor alle andere wijzigingen (AddColumn, RemoveColumn, SaveWorkbook, SaveAs, SaveToFile, OpenWorkbook)
+
+Is er een specifiek probleem of feature waar je nu aan wilt werken? Bijvoorbeeld:
+
+De volledige implementatie van Open (met echte deserialisatie van JSON naar database)
+Verbeteren van de UI responsiviteit
+Toevoegen van meer Excel-achtige features
+Of een ander probleem dat je tegenkomt?
+
+Laat maar weten wat de volgende prioriteit is!RetryBik krijg deze 2 errors
+The name 'UpdateDataGridColumns' does not exist in the current contextAn object reference is required for the non-static field, method, or property 'DispatcherExtensions.BeginInvoke(Dispatcher, Action)'EditDie errors komen omdat UpdateDataGridColumns in MainWindow.xaml.cs staat, niet in de ViewModel. We moeten de communicatie tussen ViewModel en View anders aanpakken.
+Hier zijn de fixes:
+Bestand: ViewModels/MainViewModel.cs
+Eerst voegen we een event toe om de View te notificeren:
+csharp// Voeg dit toe bovenaan de class, na de properties
+public event EventHandler? ColumnsChanged;
+Dan passen we AddColumn aan:
+csharp[RelayCommand]
+private void AddColumn()
+{
+    try
+    {
+        if (CurrentWorksheet == null)
+        {
+            MessageBox.Show("Please select a worksheet first.", "No Worksheet",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        for (int row = 0; row < RowCount; row++)
+        {
+            var cell = new Cell
+            {
+                Row = row,
+                Column = ColumnCount,
+                WorksheetId = CurrentWorksheet.WorksheetId,
+                BackgroundColor = "#FFFFFF",
+                ForegroundColor = "#000000"
+            };
+            GridData[row].Add(new CellViewModel(cell));
+        }
+
+        ColumnCount++;
+
+        SaveChangesToDatabase();
+        
+        // Notify the view that columns changed
+        ColumnsChanged?.Invoke(this, EventArgs.Empty);
+        
+        SetStatusMessage("Column added successfully", true);
+    }
+    catch (Exception ex)
+    {
+        SetStatusMessage($"Error adding column: {ex.Message}", false);
+        MessageBox.Show($"Error adding column: {ex.Message}", "Error",
+            MessageBoxButton.OK, MessageBoxImage.Error);
+    }
+}
+En RemoveColumn:
+csharp[RelayCommand]
+private void RemoveColumn()
+{
+    if (ColumnCount <= 1)
+    {
+        SetStatusMessage("Cannot remove last column", false);
+        return;
+    }
+
+    try
+    {
+        if (CurrentWorksheet == null)
+        {
+            MessageBox.Show("Please select a worksheet first.", "No Worksheet",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var result = MessageBox.Show("Are you sure you want to remove the last column?",
+            "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            var lastColIndex = ColumnCount - 1;
+            var cellsToRemove = _context.Cells
+                .Where(c => c.WorksheetId == CurrentWorksheet.WorksheetId && c.Column == lastColIndex)
+                .ToList();
+
+            _context.Cells.RemoveRange(cellsToRemove);
+            _context.SaveChanges();
+
+            foreach (var row in GridData)
+            {
+                row.RemoveAt(row.Count - 1);
+            }
+
+            ColumnCount--;
+
+            // Notify the view that columns changed
+            ColumnsChanged?.Invoke(this, EventArgs.Empty);
+
+            SetStatusMessage("Column removed successfully", true);
+        }
+    }
+    catch (Exception ex)
+    {
+        SetStatusMessage($"Error removing column: {ex.Message}", false);
+        MessageBox.Show($"Error removing column: {ex.Message}", "Error",
+            MessageBoxButton.OK, MessageBoxImage.Error);
+    }
+}
+Bestand: MainWindow.xaml.cs
+In de MainWindow_Loaded methode, subscribe je op het event:
+csharpprivate void MainWindow_Loaded(object sender, RoutedEventArgs e)
+{
+    InitializeColorPickers();
+    
+    // Subscribe to columns changed event
+    if (_viewModel != null)
+    {
+        _viewModel.ColumnsChanged += OnColumnsChanged;
+    }
+}
+Voeg deze nieuwe methode toe:
+csharpprivate void OnColumnsChanged(object? sender, EventArgs e)
+{
+    Dispatcher.BeginInvoke(new Action(() => 
+    {
+        if (_currentDataGrid != null)
+        {
+            UpdateDataGridColumns();
+        }
+    }));
+}
+En voeg een cleanup toe in de Window closing:
+csharpprotected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+{
+    // Unsubscribe from events
+    if (_viewModel != null)
+    {
+        _viewModel.ColumnsChanged -= OnColumnsChanged;
+    }
+
+    var result = MessageBox.Show("Do you want to save changes before closing?",
+        "Close DoWell", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+
+    if (result == MessageBoxResult.Yes)
+    {
+        _viewModel.SaveWorkbookCommand.Execute(null);
+    }
+    else if (result == MessageBoxResult.Cancel)
+    {
+        e.Cancel = true;
+    }
+
+    base.OnClosing(e);
+}
+Deze aanpak respecteert de MVVM scheiding: de ViewModel weet niets van de View, maar kan wel events uitzenden wanneer er iets belangrijks gebeurt.RetryBnu krijg ik deze xaml binding error 
+System.Windows.Data Error: 4 : Cannot find source for binding with reference 'RelativeSource FindAncestor, AncestorType='System.Windows.Controls.TabControl', AncestorLevel='1''. BindingExpression:Path=TabStripPlacement; DataItem=null; target element is 'TabItem' (Name=''); target property is 'NoTarget' (type 'Object')EditDeze XAML binding error is een bekende WPF "bug" die optreedt bij TabControls met custom templates. Het is eigenlijk geen echte fout - de TabControl probeert intern de TabStripPlacement te vinden, maar kan dit niet door onze custom template.
+Deze error heeft geen impact op de functionaliteit van je applicatie, maar je kunt hem oplossen door de TabItem style aan te passen.
+Bestand: MainWindow.xaml
+Vervang de huidige WorksheetTabStyle met deze versie:
+xml<!-- Tab style -->
+<Style x:Key="WorksheetTabStyle" TargetType="TabItem">
+    <Setter Property="Template">
+        <Setter.Value>
+            <ControlTemplate TargetType="TabItem">
+                <Grid>
+                    <Border Name="Border" Margin="0,0,2,0" Background="#F0F0F0" 
+                            BorderBrush="#D0D0D0" BorderThickness="1,1,1,0" CornerRadius="4,4,0,0">
+                        <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" 
+                                        HorizontalAlignment="Center" ContentSource="Header" 
+                                        Margin="12,4"/>
+                    </Border>
+                </Grid>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsSelected" Value="True">
+                        <Setter TargetName="Border" Property="Background" Value="White"/>
+                        <Setter TargetName="Border" Property="BorderBrush" Value="#2196F3"/>
+                        <Setter Property="Panel.ZIndex" Value="100"/>
+                    </Trigger>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="Border" Property="Background" Value="#E8E8E8"/>
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+        </Setter.Value>
+    </Setter>
+</Style>
+En pas de TabControl aan om de Style expliciet te gebruiken:
+xml<!-- Main Content Area with Tabs -->
+<TabControl x:Name="WorksheetTabs" ItemsSource="{Binding Worksheets}"
+            SelectedItem="{Binding CurrentWorksheet}"
+            SelectionChanged="WorksheetTabs_SelectionChanged"
+            TabStripPlacement="Bottom">
+    <TabControl.ItemContainerStyle>
+        <Style TargetType="TabItem" BasedOn="{StaticResource WorksheetTabStyle}"/>
+    </TabControl.ItemContainerStyle>
+Alternatief (eenvoudiger): Als je de custom style niet per se nodig hebt, kun je ook gewoon de style weglaten en de standaard WPF TabItem style gebruiken. Dan verwijder je de WorksheetTabStyle helemaal en gebruikt de TabControl zonder custom styling.
+Deze error is overigens puur cosmetisch en heeft geen effect op de werking van je applicatie. Veel WPF applicaties hebben deze "error" in hun output window staan zonder problemen.RetryBok ik kan nu de kolommen die ik toevoeg zie en de sheets knoppen blijken weg te zijn? maar er zijn nog castle proxies worksheetproxy onderaan en dat zou ook weg moeten. 
+nu krijg ik deze errors
+System.Windows.Data Error: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[11].IsItalic; DataItem='ObservableCollection1' (HashCode=22543082); target element is 'TextBlock' (Name=''); target property is 'FontStyle' (type 'FontStyle') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'
+System.Windows.Data Error: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[11].IsBold; DataItem='ObservableCollection1' (HashCode=22543082); target element is 'TextBlock' (Name=''); target property is 'FontWeight' (type 'FontWeight') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'
+System.Windows.Data Error: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[11].BackgroundBrush; DataItem='ObservableCollection1' (HashCode=22543082); target element is 'TextBlock' (Name=''); target property is 'Background' (type 'Brush') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'
+System.Windows.Data Error: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[11].ForegroundBrush; DataItem='ObservableCollection1' (HashCode=22543082); target element is 'TextBlock' (Name=''); target property is 'Foreground' (type 'Brush') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'
+System.Windows.Data Error: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[11].IsUnderline; DataItem='ObservableCollection1' (HashCode=22543082); target element is 'TextBlock' (Name=''); target property is 'TextDecorations' (type 'TextDecorationCollection') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'
+System.Windows.Data Error: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[11].Value; DataItem='ObservableCollection1' (HashCode=22543082); target element is 'TextBlock' (Name=''); target property is 'Text' (type 'String') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'EditEr zijn verschillende problemen:
+
+Castle Proxy - Dit komt door Entity Framework's lazy loading proxies
+Index out of range - De DataGrid probeert kolom 11 te binden terwijl er maar 10 kolommen zijn
+Tabs verdwenen - Mogelijk door de style wijziging
+
+Laten we deze één voor één oplossen:
+Bestand: MainWindow.xaml
+Voor de tabs, herstel de oorspronkelijke TabControl zonder de style wijziging:
+xml<!-- Main Content Area with Tabs -->
+<TabControl x:Name="WorksheetTabs" ItemsSource="{Binding Worksheets}"
+            SelectedItem="{Binding CurrentWorksheet}"
+            SelectionChanged="WorksheetTabs_SelectionChanged">
+    <TabControl.ItemTemplate>
+        <DataTemplate>
+            <TextBlock Text="{Binding Name}" Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}">
+                <TextBlock.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Rename..." Click="RenameWorksheet_Click"/>
+                        <MenuItem Header="Delete" Click="DeleteWorksheet_Click"/>
+                        <Separator/>
+                        <MenuItem Header="Add New Sheet" 
+                                 Command="{Binding PlacementTarget.Tag.AddWorksheetCommand, 
+                                 RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                    </ContextMenu>
+                </TextBlock.ContextMenu>
+            </TextBlock>
+        </DataTemplate>
+    </TabControl.ItemTemplate>
+Bestand: ViewModels/MainViewModel.cs
+Voor het Castle Proxy probleem, voeg een ToString override toe in de Worksheet loading:
+csharpprivate void InitializeWorkbook()
+{
+    try
+    {
+        // Load or create workbook - gebruik AsNoTracking() voor de display items
+        CurrentWorkbook = _context.Workbooks
+            .Include(w => w.Worksheets)
+            .ThenInclude(ws => ws.Cells)
+            .Include(w => w.FormatTemplates)
+            .FirstOrDefault();
+
+        if (CurrentWorkbook == null)
+        {
+            CurrentWorkbook = CreateNewWorkbook();
+        }
+
+        // Maak echte Worksheet objecten, geen proxies
+        var worksheetList = CurrentWorkbook.Worksheets
+            .OrderBy(ws => ws.TabOrder)
+            .Select(ws => new Worksheet 
+            { 
+                WorksheetId = ws.WorksheetId,
+                Name = ws.Name,
+                TabOrder = ws.TabOrder,
+                WorkbookId = ws.WorkbookId,
+                CreatedDate = ws.CreatedDate,
+                ModifiedDate = ws.ModifiedDate
+            })
+            .ToList();
+            
+        Worksheets = new ObservableCollection<Worksheet>(worksheetList);
+        FormatTemplates = new ObservableCollection<FormatTemplate>(CurrentWorkbook.FormatTemplates);
+
+        if (!Worksheets.Any())
+        {
+            // Create a default worksheet if none exist
+            var worksheet = new Worksheet
+            {
+                Name = "Sheet1",
+                TabOrder = 1,
+                WorkbookId = CurrentWorkbook.WorkbookId
+            };
+            _context.Worksheets.Add(worksheet);
+            _context.SaveChanges();
+            Worksheets.Add(worksheet);
+        }
+
+        CurrentWorksheet = Worksheets.First();
+        LoadWorksheetData();
+
+        SetStatusMessage("Workbook loaded successfully", true);
+    }
+    catch (Exception ex)
+    {
+        SetStatusMessage($"Error loading workbook: {ex.Message}", false);
+        MessageBox.Show($"Error initializing workbook: {ex.Message}", "Error",
+            MessageBoxButton.OK, MessageBoxImage.Error);
+    }
+}
+Bestand: MainWindow.xaml.cs
+Voor het index out of range probleem, update de CreateCellTemplate methode met bounds checking:
+csharpprivate DataTemplate CreateCellTemplate(int columnIndex)
+{
+    var template = new DataTemplate();
+    var factory = new FrameworkElementFactory(typeof(TextBlock));
+
+    // Gebruik een MultiBinding met een converter voor veilige indexing
+    var binding = new Binding($"[{columnIndex}]");
+    binding.FallbackValue = new CellViewModel(new Cell());
+    
+    factory.SetBinding(TextBlock.TextProperty, new Binding($"[{columnIndex}].Value") 
+    { 
+        FallbackValue = "",
+        TargetNullValue = ""
+    });
+    
+    factory.SetBinding(TextBlock.BackgroundProperty, new Binding($"[{columnIndex}].BackgroundBrush")
+    {
+        FallbackValue = Brushes.White,
+        TargetNullValue = Brushes.White
+    });
+    
+    factory.SetBinding(TextBlock.ForegroundProperty, new Binding($"[{columnIndex}].ForegroundBrush")
+    {
+        FallbackValue = Brushes.Black,
+        TargetNullValue = Brushes.Black
+    });
+
+    // Apply formatting met fallback values
+    factory.SetBinding(TextBlock.FontWeightProperty, new Binding($"[{columnIndex}].IsBold")
+    {
+        Converter = new BoolToFontWeightConverter(),
+        FallbackValue = FontWeights.Normal,
+        TargetNullValue = FontWeights.Normal
+    });
+    
+    factory.SetBinding(TextBlock.FontStyleProperty, new Binding($"[{columnIndex}].IsItalic")
+    {
+        Converter = new BoolToFontStyleConverter(),
+        FallbackValue = FontStyles.Normal,
+        TargetNullValue = FontStyles.Normal
+    });
+    
+    factory.SetBinding(TextBlock.TextDecorationsProperty, new Binding($"[{columnIndex}].IsUnderline")
+    {
+        Converter = new BoolToTextDecorationConverter(),
+        FallbackValue = null,
+        TargetNullValue = null
+    });
+
+    factory.SetValue(TextBlock.PaddingProperty, new Thickness(2));
+
+    template.VisualTree = factory;
+    return template;
+}
+Bestand: Models/Worksheet.cs
+Voeg een ToString override toe om de proxy display te voorkomen:
+csharppublic override string ToString()
+{
+    return Name;
+}
+Deze wijzigingen zouden de problemen moeten oplossen:
+
+Tabs komen terug zonder de Castle proxy text
+Index out of range errors worden opgevangen met FallbackValue
+De UI blijft stabiel ook als er tijdelijk synchronisatie issues zijn

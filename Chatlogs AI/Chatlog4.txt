@@ -1,0 +1,7 @@
+﻿Maak om te beginnen een heel simpele applicatie met de database, xaml file (datagrid), en de mogelijkheid om rijen en kolommen toe te voegen of verwijderen met een knop in de xaml file. Gebruik MVVM structuur
+
+Ik zal je helpen met het opzetten van een basis Microsoft Excel-clone applicatie genaamd "DoWell" in WPF met .NET 8.0 en Entity Framework. Laten we beginnen met een simpele maar solide basis die aan je vereisten voldoet.
+
+
+DoWell - Models (Spreadsheet.cs)
+Code 

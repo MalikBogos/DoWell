@@ -1,0 +1,337 @@
+﻿help me solve these binding errors when i remove a column. doesn't happen when i add or remove rows or add a columnSeverity    Count    Data Context    Binding Path    Target    Target Type    Description    File    Line    Project
+Warning    10    ObservableCollection1    [9].IsItalic    TextBlock.FontStyle    FontStyle    Failed to get value. ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'            
+Warning    10    ObservableCollection1    [9].IsBold    TextBlock.FontWeight    FontWeight    Failed to get value. ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'            
+Warning    10    ObservableCollection1    [9].ForegroundBrush    TextBlock.Foreground    Brush    Failed to get value. ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'            
+Warning    10    ObservableCollection1    [9].BackgroundBrush    TextBlock.Background    Brush    Failed to get value. ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'            
+Warning    10    ObservableCollection1    [9].Value    TextBlock.Text    String    Failed to get value. ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'            
+Warning    10    ObservableCollection1    [9].IsUnderline    TextBlock.TextDecorations    TextDecorationCollection    Failed to get value. ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'            and i get this in the output as explanation
+System.Windows.Data Warning: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[9].IsUnderline; DataItem='ObservableCollection1' (HashCode=36964446); target element is 'TextBlock' (Name=''); target property is 'TextDecorations' (type 'TextDecorationCollection') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'
+System.Windows.Data Warning: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[9].IsItalic; DataItem='ObservableCollection1' (HashCode=40383225); target element is 'TextBlock' (Name=''); target property is 'FontStyle' (type 'FontStyle') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'
+System.Windows.Data Warning: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[9].IsBold; DataItem='ObservableCollection1' (HashCode=40383225); target element is 'TextBlock' (Name=''); target property is 'FontWeight' (type 'FontWeight') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'
+System.Windows.Data Warning: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[9].ForegroundBrush; DataItem='ObservableCollection1' (HashCode=40383225); target element is 'TextBlock' (Name=''); target property is 'Foreground' (type 'Brush') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'
+System.Windows.Data Warning: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[9].BackgroundBrush; DataItem='ObservableCollection1' (HashCode=40383225); target element is 'TextBlock' (Name=''); target property is 'Background' (type 'Brush') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'
+System.Windows.Data Warning: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[9].Value; DataItem='ObservableCollection1' (HashCode=40383225); target element is 'TextBlock' (Name=''); target property is 'Text' (type 'String') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'
+System.Windows.Data Warning: 17 : Cannot get 'Item[]' value (type 'CellViewModel') from '' (type 'ObservableCollection1'). BindingExpression:Path=[9].IsUnderline; DataItem='ObservableCollection1' (HashCode=40383225); target element is 'TextBlock' (Name=''); target property is 'TextDecorations' (type 'TextDecorationCollection') ArgumentOutOfRangeException:'System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')'EditLooking at your binding errors, the issue occurs when removing a column because the DataGrid columns are still trying to bind to column indices that no longer exist in the data. The DataGrid columns are created with hardcoded indices, and when you remove a column from the data, those bindings become invalid.
+The solution is to rebuild the DataGrid columns after removing a column, just like you do after adding one. Here's what you need to change:
+MainWindow.xaml.cs
+In the RemoveColumn_Click method (or wherever you handle column removal), make sure you're calling UpdateDataGridColumns() after removing the column. Looking at your code, you already have ColumnsChanged?.Invoke(this, EventArgs.Empty); in the RemoveColumn command in MainViewModel.cs, which should trigger the column update.
+However, the issue might be a timing problem. Try modifying the OnColumnsChanged method in MainWindow.xaml.cs to clear the columns before updating:
+csharpprivate void OnColumnsChanged(object? sender, EventArgs e)
+{
+    Dispatcher.BeginInvoke(new Action(() =>
+    {
+        // Clear columns first to remove old bindings
+        MainDataGrid.Columns.Clear();
+        MainDataGrid.ItemsSource = null;
+        
+        // Then rebuild
+        UpdateDataGridColumns();
+    }));
+}
+Also, ensure that in ViewModels/MainViewModel.cs, the RemoveColumn method is properly updating the data before triggering the event:
+csharp[RelayCommand]
+private void RemoveColumn()
+{
+    if (ColumnCount <= 1)
+    {
+        SetStatusMessage("Cannot remove last column", false);
+        return;
+    }
+
+    try
+    {
+        if (CurrentWorkbook == null)
+        {
+            MessageBox.Show("Please select a workbook first.", "No Workbook",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var result = MessageBox.Show("Are you sure you want to remove the last column?",
+            "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            var lastColIndex = ColumnCount - 1;
+            var cellsToRemove = _context.Cells
+                .Where(c => c.WorkbookId == CurrentWorkbook.WorkbookId && c.Column == lastColIndex)
+                .ToList();
+
+            _context.Cells.RemoveRange(cellsToRemove);
+            _context.SaveChanges();
+
+            // Update the GridData collection
+            foreach (var row in GridData)
+            {
+                if (row.Count > lastColIndex)
+                {
+                    row.RemoveAt(lastColIndex);
+                }
+            }
+
+            // Update column count BEFORE triggering the event
+            ColumnCount--;
+            
+            // Now trigger the columns changed event
+            ColumnsChanged?.Invoke(this, EventArgs.Empty);
+            
+            SetStatusMessage("Column removed successfully", true);
+        }
+    }
+    catch (Exception ex)
+    {
+        SetStatusMessage($"Error removing column: {ex.Message}", false);
+        MessageBox.Show($"Error removing column: {ex.Message}", "Error",
+            MessageBoxButton.OK, MessageBoxImage.Error);
+    }
+}
+The key changes are:
+
+Ensuring the DataGrid columns are cleared before rebuilding in OnColumnsChanged
+Making sure the column count is updated before triggering the ColumnsChanged event
+
+This should eliminate the binding errors because the DataGrid won't try to access non-existent column indices.RetryBthis does NOT fix anything. can't you look in other files? why do you insist that the problem is in the xaml cs file? the ouput clearly says there's something wrong with the cellviewmodel?EditYou're absolutely right! The issue is that the binding is trying to access index [9] when you only have indices 0-8 after removing a column. The problem is in how the UpdateDataGridColumns() method creates the bindings.
+Looking at your code, when you have 10 columns initially (indices 0-9) and remove one, you now have 9 columns (indices 0-8), but the DataGrid still has the old column templates that try to bind to index [9].
+The real issue is that the UpdateDataGridColumns() method is called AFTER the data has been modified but it's using the NEW ColumnCount to create columns. This means it creates columns 0-8, but the old column 9 is still there trying to bind.
+Here's the fix in MainWindow.xaml.cs:
+csharpprivate void UpdateDataGridColumns()
+{
+    try
+    {
+        if (_viewModel == null || _viewModel.GridData == null || _viewModel.GridData.Count == 0)
+            return;
+
+        // Clear the ItemsSource FIRST to disconnect all bindings
+        MainDataGrid.ItemsSource = null;
+        
+        // Then clear columns
+        MainDataGrid.Columns.Clear();
+
+        // Add row header column
+        var rowHeaderColumn = new DataGridTextColumn
+        {
+            Header = "",
+            Width = 40,
+            IsReadOnly = true,
+            Binding = new Binding("[0]")
+            {
+                Converter = new RowNumberConverter()
+            }
+        };
+        MainDataGrid.Columns.Add(rowHeaderColumn);
+
+        // Add data columns - ALLEEN voor bestaande kolommen
+        for (int col = 0; col < _viewModel.ColumnCount; col++)
+        {
+            var column = new DataGridTemplateColumn
+            {
+                Header = GetColumnName(col),
+                Width = new DataGridLength(100),
+                CellTemplate = CreateCellTemplate(col),
+                CellEditingTemplate = CreateCellEditingTemplate(col)
+            };
+            MainDataGrid.Columns.Add(column);
+        }
+
+        // Set ItemsSource LAST after columns are properly configured
+        MainDataGrid.ItemsSource = _viewModel.GridData;
+    }
+    catch (Exception ex)
+    {
+        _viewModel.StatusMessage = $"Error updating columns: {ex.Message}";
+        _viewModel.IsStatusSuccess = false;
+    }
+}
+The key change is setting MainDataGrid.ItemsSource = null; BEFORE clearing columns, and then setting it back AFTER creating new columns. This ensures all old bindings are disconnected before creating new ones.
+This should fix the binding errors when removing columns.RetryBstill have the same problemEditYou're right - the problem persists because WPF's DataGrid is trying to update bindings while the column removal is in progress. The issue is that the DataGrid's binding system is still active when you're modifying the underlying collection.
+Let me look more carefully at the actual binding paths in the error: [9].Value, [9].IsBold, etc. These are binding to a specific index in the row's ObservableCollection. When you remove a column, the binding templates are still there trying to access index [9] which no longer exists.
+The fix is to force the DataGrid to completely release its bindings before modifying the data. Here's the solution:
+MainWindow.xaml.cs - Modify the OnColumnsChanged method:
+csharpprivate void OnColumnsChanged(object? sender, EventArgs e)
+{
+    Dispatcher.BeginInvoke(new Action(() =>
+    {
+        // Force complete unbinding by setting to an empty collection first
+        MainDataGrid.ItemsSource = new ObservableCollection<ObservableCollection<CellViewModel>>();
+        MainDataGrid.Columns.Clear();
+        
+        // Allow UI to process the unbinding
+        Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
+        
+        // Now update with the real data
+        UpdateDataGridColumns();
+    }), System.Windows.Threading.DispatcherPriority.Background);
+}
+Or, an even better approach - modify ViewModels/MainViewModel.cs to handle this more cleanly in the RemoveColumn method:
+csharp[RelayCommand]
+private void RemoveColumn()
+{
+    if (ColumnCount <= 1)
+    {
+        SetStatusMessage("Cannot remove last column", false);
+        return;
+    }
+
+    try
+    {
+        if (CurrentWorkbook == null)
+        {
+            MessageBox.Show("Please select a workbook first.", "No Workbook",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var result = MessageBox.Show("Are you sure you want to remove the last column?",
+            "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            var lastColIndex = ColumnCount - 1;
+            
+            // Create a new GridData collection instead of modifying the existing one
+            var newGridData = new ObservableCollection<ObservableCollection<CellViewModel>>();
+            
+            for (int row = 0; row < RowCount; row++)
+            {
+                var newRow = new ObservableCollection<CellViewModel>();
+                for (int col = 0; col < lastColIndex; col++)
+                {
+                    newRow.Add(GridData[row][col]);
+                }
+                newGridData.Add(newRow);
+            }
+            
+            // Remove from database
+            var cellsToRemove = _context.Cells
+                .Where(c => c.WorkbookId == CurrentWorkbook.WorkbookId && c.Column == lastColIndex)
+                .ToList();
+
+            _context.Cells.RemoveRange(cellsToRemove);
+            _context.SaveChanges();
+            
+            // Update column count first
+            ColumnCount--;
+            
+            // Replace GridData entirely - this forces complete rebinding
+            GridData = newGridData;
+            
+            // Trigger columns changed
+            ColumnsChanged?.Invoke(this, EventArgs.Empty);
+            
+            SetStatusMessage("Column removed successfully", true);
+        }
+    }
+    catch (Exception ex)
+    {
+        SetStatusMessage($"Error removing column: {ex.Message}", false);
+        MessageBox.Show($"Error removing column: {ex.Message}", "Error",
+            MessageBoxButton.OK, MessageBoxImage.Error);
+    }
+}
+This approach creates a completely new GridData collection rather than modifying the existing one in place, which forces WPF to completely rebind everything cleanly.RetryByes!!! the mainviewmodel fixed it!!! good job!!EditExcellent! I'm glad that fixed it!
+The key insight was that WPF's binding system was holding onto the old collection structure while you were modifying it in place. By creating a completely new GridData collection instead of modifying the existing one, we forced WPF to cleanly rebind everything without trying to access non-existent indices.
+This is a common pattern when dealing with ObservableCollections in WPF - sometimes it's cleaner to replace the entire collection rather than modify it in place, especially when you're changing the structure (like removing columns) rather than just the values.
+The binding errors were happening because the DataGrid's template bindings (like [9].Value) were still active while the underlying collection no longer had that index. Creating a new collection breaks those old bindings cleanly before establishing new ones.
+Great debugging on your part to recognize that the issue wasn't in the XAML code-behind but in the ViewModel's data manipulation!RetryBok can you now fix the rows all showing number 1 even tho it should be 1 2 3 4 5 6 etcEditThe issue is in your RowNumberConverter in MainWindow.xaml.cs. It's trying to access row[0].Row but that might not be reliable. Here's the fix:
+MainWindow.xaml.cs - Replace the RowNumberConverter class:
+csharppublic class RowNumberConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+    {
+        try
+        {
+            // Get the row from the DataGrid context
+            if (value is ObservableCollection<CellViewModel> row)
+            {
+                var dataGrid = Application.Current.MainWindow?.FindName("MainDataGrid") as DataGrid;
+                if (dataGrid != null)
+                {
+                    var index = dataGrid.Items.IndexOf(row);
+                    if (index >= 0)
+                    {
+                        return (index + 1).ToString();
+                    }
+                }
+                
+                // Fallback to using the Row property if available
+                if (row.Count > 0)
+                {
+                    return (row[0].Row + 1).ToString();
+                }
+            }
+            return "1";
+        }
+        catch
+        {
+            return "1";
+        }
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+Or, a simpler approach - use a different binding strategy. In MainWindow.xaml.cs, modify the row header column creation in UpdateDataGridColumns():
+csharpprivate void UpdateDataGridColumns()
+{
+    try
+    {
+        if (_viewModel == null || _viewModel.GridData == null || _viewModel.GridData.Count == 0)
+            return;
+
+        MainDataGrid.ItemsSource = null;
+        MainDataGrid.Columns.Clear();
+
+        // Add row header column with a simpler binding
+        var rowHeaderColumn = new DataGridTextColumn
+        {
+            Header = "",
+            Width = 40,
+            IsReadOnly = true,
+            Binding = new Binding("[0].Row")
+            {
+                Converter = new SimpleRowNumberConverter()
+            }
+        };
+        MainDataGrid.Columns.Add(rowHeaderColumn);
+
+        // Rest of the method stays the same...
+        for (int col = 0; col < _viewModel.ColumnCount; col++)
+        {
+            var column = new DataGridTemplateColumn
+            {
+                Header = GetColumnName(col),
+                Width = new DataGridLength(100),
+                CellTemplate = CreateCellTemplate(col),
+                CellEditingTemplate = CreateCellEditingTemplate(col)
+            };
+            MainDataGrid.Columns.Add(column);
+        }
+
+        MainDataGrid.ItemsSource = _viewModel.GridData;
+    }
+    catch (Exception ex)
+    {
+        _viewModel.StatusMessage = $"Error updating columns: {ex.Message}";
+        _viewModel.IsStatusSuccess = false;
+    }
+}
+And add a simpler converter (rename the old one or replace it):
+csharppublic class SimpleRowNumberConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+    {
+        if (value is int rowIndex)
+        {
+            return (rowIndex + 1).ToString();
+        }
+        return "1";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+The issue was that the converter was trying to access the Row property, but it wasn't getting the correct row index. This simpler approach directly uses the Row property from the CellViewModel.

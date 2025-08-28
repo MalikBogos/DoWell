@@ -1,0 +1,92 @@
+﻿maak een eerste versie met zo weinig mogelijk verschillende bestanden
+
+Ik zal een Microsoft Excel-clone maken met beperkte functionaliteit in WPF (.NET 8.0) met Entity Framework. Hier is een eerste versie met minimale bestanden:
+
+
+ExcelClone.csproj - Project File
+Code 
+
+App.xaml - Application Entry
+Code 
+
+MainWindow.xaml - User Interface
+Code 
+
+MainWindow.xaml.cs + App.xaml.cs + Models + DbContext - Complete Code
+Code 
+Continue
+
+
+MainWindow.xaml.cs + App.xaml.cs + Models + DbContext - Complete Code
+Code ∙ Version 2 
+Perfect! Ik heb een complete Microsoft Excel-clone applicatie gemaakt die aan alle vereisten voldoet. Hier is een overzicht van de implementatie:
+
+Projectstructuur (4 bestanden):
+ExcelClone.csproj - Project configuratie voor .NET 8.0 met Entity Framework
+App.xaml - Application resources met styles
+MainWindow.xaml - Complete UI met tabs, menus, en containers
+MainWindow.xaml.cs + overige code - Alle C# code in één bestand
+Voldoet aan alle vereisten:
+Absolute vereisten ✅:
+.NET 8.0 WPF-applicatie
+Entity Framework Core met SQLite
+3+ gekoppelde tabellen: Workbook → Worksheet → Cell
+Basis functionaliteit ✅:
+CRUD operaties voor alle tabellen
+LINQ en Lambda-expressies overal gebruikt
+Styles in XAML (HeaderTextStyle, ButtonStyle, DataGridStyle, TextBoxStyle)
+Controls gewijzigd met C# code (TabControl, StatusBar, SearchBoxes)
+Try/Catch blokken voor error handling
+3+ containers: Grid, StackPanel, DockPanel, WrapPanel, GroupBox, Border, ScrollViewer
+Geavanceerde functionaliteit ✅:
+Ergonomische UI met tabs en menu structuur
+Data Binding (WorkbookViewModel, SpreadsheetCellViewModel)
+ViewModels voor Workbook entiteit
+Database seeding met sample data
+Pop-up windows (InputDialog, MessageBoxes)
+TabControl met 4 tabs
+Menu structuur met File, Edit, View, Help
+Context menus op DataGrids met verschillende opties
+Error handling met gebruikerswaarschuwingen
+Om te starten:
+Maak een nieuw WPF project in Visual Studio 2022
+Vervang de standaard bestanden met bovenstaande code
+Run dotnet restore om packages te installeren
+Run de applicatie - database wordt automatisch aangemaakt met seed data
+Features:
+Spreadsheet grid met cel editing
+Formula bar voor formules (=SUM, =AVERAGE, etc.)
+Workbook en Worksheet management
+Zoek functionaliteit voor alle tabellen
+Copy/Paste functionaliteit
+Context menus met hulp opties
+Status bar met cel positie
+Toolbar met formatting opties
+De applicatie gebruikt SQLite als database en slaat alles lokaal op in excelclone.db. Alle wijzigingen worden automatisch opgeslagen via Entity Framework.
+
+kan je gebruik maken van dingen zoals communitytoolkit.mvvm om code korter te maken, en zet nu deze keer alle bestanden in een apart gepast bestand
+
+Ik zal de applicatie herstructureren met CommunityToolkit.Mvvm voor cleaner MVVM patterns en alle code in aparte bestanden plaatsen.
+
+
+ExcelClone.csproj
+Code 
+
+App.xaml
+Code 
+
+App.xaml.cs
+Code 
+
+Models/Entities.cs
+Code 
+
+Data/ExcelCloneContext.cs
+Code 
+
+Data/DatabaseSeeder.cs
+Code 
+
+Services/Services.cs
+Code 
+

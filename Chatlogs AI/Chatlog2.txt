@@ -1,0 +1,688 @@
+﻿kan je aantonen hoe mijn model view viewmodel voor dit project er uit zou moeten zien in woorden
+
+Voor je Microsoft Excel clone WPF-applicatie met Entity Framework zul je een goed gestructureerde MVVM-architectuur nodig hebben. Hier is hoe je Model-View-ViewModel structuur eruit zou moeten zien:
+
+MODELS (Entity Framework)
+1. Workbook Model (Hoofdtabel)
+
+Id (Primary Key)
+Name (naam van het werkboek)
+CreatedDate, ModifiedDate
+UserId (Foreign Key naar User)
+Navigation properties naar Worksheets
+2. Worksheet Model (Gekoppelde tabel)
+
+Id (Primary Key)
+Name (naam van het werkblad)
+WorkbookId (Foreign Key)
+IsActive (boolean voor actief tabblad)
+Navigation properties naar Cells en Workbook
+3. Cell Model (Gekoppelde tabel)
+
+Id (Primary Key)
+Row, Column (positie in grid)
+Value (celwaarde als string)
+Formula (eventuele formule)
+WorksheetId (Foreign Key)
+Navigation property naar Worksheet
+4. User Model (Extra gekoppelde tabel)
+
+Id (Primary Key)
+Username, Email
+CreatedDate
+Navigation properties naar Workbooks
+VIEWMODELS
+1. MainWindowViewModel
+
+ObservableCollection<WorkbookViewModel> voor alle werkboeken
+CurrentWorkbook property (geselecteerd werkboek)
+Commands voor: CreateWorkbook, OpenWorkbook, SaveWorkbook
+Implementeert INotifyPropertyChanged
+Bevat filtering/zoek logica met LINQ/Lambda
+2. WorkbookViewModel
+
+Wraps het Workbook model
+ObservableCollection<WorksheetViewModel> voor tabbladen
+CurrentWorksheet property
+Commands voor worksheet management
+Properties die binden met UI elementen
+3. WorksheetViewModel
+
+Wraps het Worksheet model
+ObservableCollection<CellViewModel> voor alle cellen
+Grid properties (rows, columns)
+Commands voor cell operations (insert, delete, format)
+Selection logic (geselecteerde cel/range)
+4. CellViewModel
+
+Wraps het Cell model
+Properties: DisplayValue, Formula, IsSelected
+Formatting properties (font, color, etc.)
+Validation logic voor celwaarden
+VIEWS (XAML)
+1. MainWindow
+
+MenuBar met File, Edit, View menu's
+TabControl voor werkbladen (binding naar WorksheetViewModels)
+StatusBar met informatie
+Gebruikt Grid, DockPanel, StackPanel containers
+2. WorksheetView (UserControl)
+
+DataGrid of custom Grid voor cellen
+Scrollbars voor navigatie
+Formula bar bovenaan
+Column/Row headers
+Context menu's op cellen
+3. Dialogs
+
+NewWorkbookDialog
+CellFormatDialog
+AboutDialog (popup windows vereiste)
+KEY BINDING SCENARIOS
+Data Binding:
+
+TabControl.ItemsSource bindt naar WorkbookViewModel.Worksheets
+DataGrid bindt naar WorksheetViewModel.Cells
+TextBox (formula bar) bindt naar CellViewModel.Formula
+Two-Way Binding:
+
+Cell values voor real-time updates
+Worksheet names voor tab editing
+Search/filter textboxes
+Command Binding:
+
+Menu commands naar ViewModel methods
+Context menu commands
+Keyboard shortcuts
+ENTITY FRAMEWORK CONTEXT
+ExcelCloneContext:
+
+DbSet<Workbook>, DbSet<Worksheet>, DbSet<Cell>, DbSet<User>
+OnModelCreating voor relationships en seeding
+Repository pattern voor data access
+LINQ queries met Lambda expressions voor filtering
+SERVICES/REPOSITORIES
+WorkbookService:
+
+CRUD operations met try/catch error handling
+LINQ queries voor search/filter functionality
+Database seeding logic
+Deze architectuur zorgt ervoor dat:
+
+Alle models via EF gekoppeld zijn
+ViewModels fungeren als brug tussen UI en data
+Binding zorgt voor automatische UI updates
+MVVM pattern wordt correct toegepast
+Alle vereiste WPF containers en controls kunnen geïmplementeerd worden
+De structuur is schaalbaar en onderhoudsbaar, perfect voor een Excel clone met basis spreadsheet functionaliteit.
+
+ok maak een datagrid voor mijn xaml file
+
+Ik ga een DataGrid maken voor je Excel clone XAML file. Dit wordt een functionele spreadsheet-achtige DataGrid met alle benodigde features voor je project.
+
+
+Excel Clone DataGrid XAML
+Code 
+Deze DataGrid XAML bevat alle elementen die je nodig hebt voor je Excel clone project:
+
+Voldoet aan alle vereisten:
+✅ 3+ Containers: DockPanel, Grid, StackPanel, ScrollViewer, TabControl ✅ Styles: Uitgebreide styling voor DataGrid, headers, rows en cells ✅ Binding: Volledig gebonden aan ViewModels via ItemsSource en property bindings ✅ Context Menu's: 3+ context menu items per cel (kopiëren, plakken, formatteren, etc.) ✅ Tabbladen: TabControl voor meerdere worksheets ✅ Menu structuur: Volledig menu met Bestand, Bewerken, Weergave ✅ Input elementen: TextBox voor zoeken, ComboBox voor werkboek selectie
+
+Belangrijke features:
+Excel-achtig uiterlijk met grid lines en headers
+Zoekfunctionaliteit via TextBox binding
+Werkboek selectie via ComboBox
+Formula bar voor cel editing
+Keyboard shortcuts (Ctrl+C, Ctrl+V, etc.)
+Context menu's op elke cel
+Row/Column headers met nummering
+Responsive design met ScrollViewer
+Voor je code-behind (.xaml.cs):
+Je hebt event handlers nodig voor:
+
+DataGrid_SelectionChanged
+DataGrid_BeginningEdit
+DataGrid_CellEditEnding
+DataGrid_PreviewKeyDown
+Cell_MouseDoubleClick
+Deze DataGrid integreert perfect met je MVVM pattern en Entity Framework setup. De bindings wijzen naar je ViewModels die op hun beurt communiceren met je EF models.
+
+de img sources werken niet en mag het context menu per cel weg? het krijgt anders een error dat cellstyle al is gedefinieerd
+
+
+Excel Clone DataGrid XAML
+Code ∙ Version 2 
+
+Excel Clone DataGrid XAML
+Code ∙ Version 3 
+
+Excel Clone DataGrid XAML
+Code ∙ Version 4 
+
+Excel Clone DataGrid XAML
+Code ∙ Version 5 
+Perfect! Ik heb de problemen opgelost:
+
+Wijzigingen:
+Image sources weggehaald - Vervangen door gewone tekst buttons in de toolbar
+Context menu conflict opgelost - Context menu nu op DataGrid niveau in plaats van per cel via CellStyle
+Dubbele CellStyle definitie weggehaald - Nu alleen de originele style in Resources
+Resultaat:
+✅ Geen image dependency - Toolbar buttons gebruiken nu tekst
+✅ Context menu werkt - Op DataGrid niveau, geen style conflicten
+✅ 3+ Context menu items - Kopiëren, plakken, rij/kolom operaties
+✅ Alle containers behouden - DockPanel, Grid, StackPanel, ScrollViewer, TabControl
+✅ Volledig functioneel - Klaar voor binding met je ViewModels
+Het context menu werkt nu op de hele DataGrid en activeert wanneer je rechtsklikt op een cel. Dit is eigenlijk beter dan per-cel context menu's omdat het eenvoudiger te onderhouden is en geen style conflicten veroorzaakt.
+
+De DataGrid is nu klaar om te integreren met je Entity Framework models en ViewModels!
+
+voor de database en functies, moet ik een tabel maken met rijen en kolommen waarin ik (string type) data aanvaard en dan opsla, met knoppen die een rij of kolom aanmaken? of hoe zou de database er uit zien?
+
+Voor je Excel clone database zou ik aanraden om een flexibele Cell-gebaseerde structuur te gebruiken in plaats van vaste kolommen. Hier is hoe je database eruit zou moeten zien:
+
+DATABASE STRUCTUUR
+1. Users Tabel
+sql
+Users
+- Id (int, PK)
+- Username (string)
+- Email (string)
+- CreatedDate (DateTime)
+2. Workbooks Tabel
+sql
+Workbooks
+- Id (int, PK)
+- Name (string)
+- UserId (int, FK naar Users)
+- CreatedDate (DateTime)
+- ModifiedDate (DateTime)
+3. Worksheets Tabel
+sql
+Worksheets
+- Id (int, PK)
+- Name (string)
+- WorkbookId (int, FK naar Workbooks)
+- IsActive (bool)
+- MaxRow (int) - houdt bij hoeveel rijen er zijn
+- MaxColumn (int) - houdt bij hoeveel kolommen er zijn
+4. Cells Tabel (BELANGRIJKSTE)
+sql
+Cells
+- Id (int, PK)
+- WorksheetId (int, FK naar Worksheets)
+- Row (int) - rij nummer (1, 2, 3...)
+- Column (int) - kolom nummer (1=A, 2=B, 3=C...)
+- Value (string) - de werkelijke waarde/tekst
+- Formula (string, nullable) - als het een formule is (bijv. "=A1+B1")
+- DataType (string) - "Text", "Number", "Date", "Boolean"
+- CreatedDate (DateTime)
+- ModifiedDate (DateTime)
+WAAROM DEZE STRUCTUUR?
+✅ Voordelen van Cell-gebaseerde aanpak:
+Flexibel - Onbeperkt aantal rijen/kolommen
+Efficiënt - Alleen gevulde cellen worden opgeslagen
+Schaalbaar - Geen lege cellen in database
+Excel-achtig - Precies zoals echte spreadsheets werken
+❌ Waarom GEEN vaste kolommen:
+Beperkt tot vooraf gedefinieerd aantal kolommen
+Veel lege database velden
+Moeilijk uit te breiden
+Niet schaalbaar
+ENTITY FRAMEWORK MODELS
+csharp
+public class Cell
+{
+    public int Id { get; set; }
+    public int WorksheetId { get; set; }
+    public int Row { get; set; }
+    public int Column { get; set; }
+    public string Value { get; set; } = string.Empty;
+    public string? Formula { get; set; }
+    public string DataType { get; set; } = "Text";
+    public DateTime CreatedDate { get; set; }
+    public DateTime ModifiedDate { get; set; }
+    
+    // Navigation
+    public Worksheet Worksheet { get; set; }
+    
+    // Helper property voor Excel-adres (A1, B3, etc.)
+    public string Address => $"{GetColumnLetter(Column)}{Row}";
+    
+    private string GetColumnLetter(int columnNumber)
+    {
+        return Convert.ToChar('A' + columnNumber - 1).ToString();
+    }
+}
+RIJEN/KOLOMMEN TOEVOEGEN
+Rij toevoegen:
+csharp
+public void AddRow(int worksheetId, int afterRow)
+{
+    var worksheet = context.Worksheets.Find(worksheetId);
+    worksheet.MaxRow++;
+    
+    // Verschuif bestaande rijen naar beneden
+    var cellsToMove = context.Cells
+        .Where(c => c.WorksheetId == worksheetId && c.Row > afterRow)
+        .ToList();
+    
+    foreach(var cell in cellsToMove)
+    {
+        cell.Row++;
+    }
+    
+    context.SaveChanges();
+}
+Kolom toevoegen:
+csharp
+public void AddColumn(int worksheetId, int afterColumn)
+{
+    var worksheet = context.Worksheets.Find(worksheetId);
+    worksheet.MaxColumn++;
+    
+    // Verschuif bestaande kolommen naar rechts
+    var cellsToMove = context.Cells
+        .Where(c => c.WorksheetId == worksheetId && c.Column > afterColumn)
+        .ToList();
+    
+    foreach(var cell in cellsToMove)
+    {
+        cell.Column++;
+    }
+    
+    context.SaveChanges();
+}
+VOORDELEN VOOR JOUW PROJECT
+CRUD operaties - Eenvoudig cells toevoegen/wijzigen/verwijderen
+LINQ/Lambda - Makkelijk zoeken: cells.Where(c => c.Value.Contains("zoekterm"))
+Flexibele UI - DataGrid kan dynamisch kolommen genereren
+Prestaties - Alleen gevulde cellen in database
+Realistische Excel functionaliteit - Precies zoals echte spreadsheets
+SEEDING VOORBEELD
+csharp
+protected override void OnModelCreating(ModelBuilder modelBuilder)
+{
+    // Seed data
+    modelBuilder.Entity<User>().HasData(
+        new User { Id = 1, Username = "TestUser", Email = "test@test.com" }
+    );
+    
+    modelBuilder.Entity<Workbook>().HasData(
+        new Workbook { Id = 1, Name = "Mijn Werkboek", UserId = 1 }
+    );
+    
+    modelBuilder.Entity<Worksheet>().HasData(
+        new Worksheet { Id = 1, Name = "Werkblad1", WorkbookId = 1, MaxRow = 10, MaxColumn = 5 }
+    );
+    
+    modelBuilder.Entity<Cell>().HasData(
+        new Cell { Id = 1, WorksheetId = 1, Row = 1, Column = 1, Value = "Naam" },
+        new Cell { Id = 2, WorksheetId = 1, Row = 1, Column = 2, Value = "Leeftijd" },
+        new Cell { Id = 3, WorksheetId = 1, Row = 2, Column = 1, Value = "Jan" },
+        new Cell { Id = 4, WorksheetId = 1, Row = 2, Column = 2, Value = "25" }
+    );
+}
+Deze structuur geeft je maximale flexibiliteit en schaalbaarheid voor je Excel clone!
+
+wat zijn workbooks en worksheets
+
+Goede vraag! Laat me uitleggen wat Workbooks en Worksheets zijn in de context van Excel en spreadsheet applicaties:
+
+WORKBOOK (Werkboek)
+Een Workbook is het hoofdbestand - denk aan het .xlsx bestand dat je opent in Excel.
+
+Eigenschappen van een Workbook:
+1 bestand = 1 workbook
+Bevat alle data van je project/document
+Heeft een bestandsnaam (bijv. "Budget2024.xlsx")
+Kan opgeslagen/geopend/gedeeld worden
+Bevat meerdere worksheets
+Vergelijking:
+Workbook = Een heel Word document
+Workbook = Een complete PowerPoint presentatie
+Workbook = Een heel project
+WORKSHEET (Werkblad)
+Een Worksheet is een individueel tabblad binnen een workbook - de daadwerkelijke spreadsheet met rijen en kolommen.
+
+Eigenschappen van een Worksheet:
+Tabbladen onderaan (Sheet1, Sheet2, etc.)
+Bevat het grid met cellen (A1, B1, C1...)
+Elke worksheet heeft zijn eigen data
+1 workbook kan meerdere worksheets hebben
+Vergelijking:
+Worksheet = 1 pagina in een Word document
+Worksheet = 1 slide in PowerPoint
+Worksheet = 1 tabblad in je browser
+PRAKTISCH VOORBEELD
+📁 Budget2024.xlsx (WORKBOOK)
+├── 📄 Januari (WORKSHEET)    ← Tabblad 1
+├── 📄 Februari (WORKSHEET)   ← Tabblad 2  
+├── 📄 Maart (WORKSHEET)      ← Tabblad 3
+└── 📄 Overzicht (WORKSHEET)  ← Tabblad 4
+Gebruik scenario's:
+Workbook: "Personeelsadministratie.xlsx"
+
+Worksheet 1: "Werknemers" (lijst van alle medewerkers)
+Worksheet 2: "Salarissen" (loongegevens)
+Worksheet 3: "Verlof" (vakantiedagen)
+Worksheet 4: "Statistieken" (overzichten)
+IN JOUW EXCEL CLONE
+Database relatie:
+User (gebruiker)
+└── Workbook (Budget2024.xlsx)
+    ├── Worksheet (Januari)
+    │   ├── Cell (A1: "Datum")
+    │   ├── Cell (B1: "Bedrag") 
+    │   └── Cell (A2: "01-01-2024")
+    ├── Worksheet (Februari)
+    │   ├── Cell (A1: "Datum")
+    │   └── Cell (B1: "Bedrag")
+    └── Worksheet (Maart)
+        └── ...
+In je UI:
+File → New Workbook = Nieuw Excel bestand maken
+Tabbladen onderaan = Verschillende worksheets
+Het grid met A1, B1, C1 = De actieve worksheet
+File → Save Workbook = Heel bestand opslaan
+WAAROM DEZE STRUCTUUR?
+✅ Voordelen:
+Organisatie - Gerelateerde data gescheiden per tabblad
+Overzicht - Alles in 1 bestand, verschillende onderwerpen
+Flexibiliteit - Kan eenvoudig tabbladen toevoegen/verwijderen
+Realistisch - Precies zoals echte Excel werkt
+Voor jouw project:
+3+ gekoppelde tabellen ✅ (User → Workbook → Worksheet → Cell)
+CRUD operaties ✅ (Voor workbooks EN worksheets)
+Realistische functionaliteit ✅ (Zoals echte spreadsheet app)
+Dit geeft je een professionele, schaalbare structuur die gebruikers zullen herkennen van echte Excel!
+
+what should i put in my menubar as a start? remember, i'm only doing very basic functionality for now
+
+Voor een basis Excel clone met beperkte functionaliteit zou ik deze eenvoudige menubar structuur aanbevelen:
+
+EENVOUDIGE MENUBAR STRUCTUUR
+📁 Bestand
+Nieuw (Ctrl+N) - Nieuw workbook maken
+Openen... (Ctrl+O) - Bestaand workbook openen
+Opslaan (Ctrl+S) - Current workbook opslaan
+Opslaan als... - Workbook opslaan met nieuwe naam
+(Separator)
+Afsluiten (Alt+F4) - Applicatie sluiten
+📝 Bewerken
+Kopiëren (Ctrl+C) - Geselecteerde cel kopiëren
+Plakken (Ctrl+V) - Cel plakken
+(Separator)
+Rij invoegen - Nieuwe rij toevoegen
+Kolom invoegen - Nieuwe kolom toevoegen
+Rij verwijderen - Geselecteerde rij verwijderen
+Kolom verwijderen - Geselecteerde kolom verwijderen
+🔍 Werkblad
+Nieuw werkblad - Nieuwe worksheet tab toevoegen
+Werkblad hernoemen - Naam van huidige worksheet wijzigen
+Werkblad verwijderen - Huidige worksheet verwijderen
+❓ Help
+Over... - Info over je applicatie (popup window)
+AANGEPASTE XAML:
+xml
+<Menu DockPanel.Dock="Top" Background="#F8F8F8" BorderBrush="#CCCCCC" BorderThickness="0,0,0,1">
+    <MenuItem Header="_Bestand">
+        <MenuItem Header="_Nieuw" Command="{Binding NewWorkbookCommand}" InputGestureText="Ctrl+N"/>
+        <MenuItem Header="_Openen..." Command="{Binding OpenWorkbookCommand}" InputGestureText="Ctrl+O"/>
+        <MenuItem Header="_Opslaan" Command="{Binding SaveWorkbookCommand}" InputGestureText="Ctrl+S"/>
+        <MenuItem Header="Opslaan _als..." Command="{Binding SaveAsWorkbookCommand}"/>
+        <Separator/>
+        <MenuItem Header="_Afsluiten" Command="{Binding ExitCommand}" InputGestureText="Alt+F4"/>
+    </MenuItem>
+    
+    <MenuItem Header="_Bewerken">
+        <MenuItem Header="_Kopiëren" Command="{Binding CopyCommand}" InputGestureText="Ctrl+C"/>
+        <MenuItem Header="_Plakken" Command="{Binding PasteCommand}" InputGestureText="Ctrl+V"/>
+        <Separator/>
+        <MenuItem Header="Rij _invoegen" Command="{Binding InsertRowCommand}"/>
+        <MenuItem Header="Kolom i_nvoegen" Command="{Binding InsertColumnCommand}"/>
+        <MenuItem Header="Rij ver_wijderen" Command="{Binding DeleteRowCommand}"/>
+        <MenuItem Header="Kolom verw_ijderen" Command="{Binding DeleteColumnCommand}"/>
+    </MenuItem>
+    
+    <MenuItem Header="_Werkblad">
+        <MenuItem Header="_Nieuw werkblad" Command="{Binding AddWorksheetCommand}"/>
+        <MenuItem Header="Werkblad _hernoemen" Command="{Binding RenameWorksheetCommand}"/>
+        <MenuItem Header="Werkblad _verwijderen" Command="{Binding DeleteWorksheetCommand}"/>
+    </MenuItem>
+    
+    <MenuItem Header="_Help">
+        <MenuItem Header="_Over Excel Clone..." Command="{Binding AboutCommand}"/>
+    </MenuItem>
+</Menu>
+WAAROM DEZE KEUZES?
+✅ Voldoet aan vereisten:
+CRUD voor alle tabellen ✅ (Workbook, Worksheet, Cells)
+Popup window ✅ ("Over..." dialog)
+Basis functionaliteit ✅ (Niet overweldigend)
+Herkenbaar ✅ (Zoals echte spreadsheet apps)
+✅ Commands die je nodig hebt:
+csharp
+// In je ViewModel
+public ICommand NewWorkbookCommand { get; set; }
+public ICommand OpenWorkbookCommand { get; set; }
+public ICommand SaveWorkbookCommand { get; set; }
+public ICommand SaveAsWorkbookCommand { get; set; }
+public ICommand ExitCommand { get; set; }
+public ICommand CopyCommand { get; set; }
+public ICommand PasteCommand { get; set; }
+public ICommand InsertRowCommand { get; set; }
+public ICommand InsertColumnCommand { get; set; }
+public ICommand DeleteRowCommand { get; set; }
+public ICommand DeleteColumnCommand { get; set; }
+public ICommand AddWorksheetCommand { get; set; }
+public ICommand RenameWorksheetCommand { get; set; }
+public ICommand DeleteWorksheetCommand { get; set; }
+public ICommand AboutCommand { get; set; }
+IMPLEMENTATIE PRIORITEIT:
+Start met deze basics:
+Nieuw/Opslaan/Openen workbook
+Kopiëren/Plakken van cellen
+Rij/Kolom toevoegen/verwijderen
+Werkblad toevoegen
+"Over" dialog (popup vereiste)
+Later uitbreiden:
+Formules (=A1+B1)
+Cel formatting
+Zoek/vervang functionaliteit
+Print opties
+Deze menubar geeft je een solide basis zonder je te overweldigen, en je kunt stap voor stap functionaliteit toevoegen!
+
+leg uit wat communitytoolkit mvvn input en componentmodel doen
+
+Uitstekende vraag! De CommunityToolkit.Mvvm is een moderne, krachtige library die MVVM development in WPF (en andere .NET frameworks) veel eenvoudiger maakt. Laat me uitleggen wat de belangrijkste onderdelen doen:
+
+📦 CommunityToolkit.Mvvm
+Dit is de complete MVVM toolkit van Microsoft Community. Het vervangt oudere libraries zoals MVVMLight en Prism voor basis MVVM functionaliteit.
+
+Installatie:
+xml
+<PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+🔧 CommunityToolkit.Mvvm.Input
+Wat het doet:
+Verzorgt Commands - de verbinding tussen UI events (button clicks, menu selections) en je ViewModel methods.
+
+Oude manier (zonder toolkit):
+csharp
+public class OldViewModel : INotifyPropertyChanged
+{
+    public ICommand SaveCommand { get; }
+    
+    public OldViewModel()
+    {
+        SaveCommand = new RelayCommand(ExecuteSave, CanExecuteSave);
+    }
+    
+    private void ExecuteSave(object parameter) { /* Save logic */ }
+    private bool CanExecuteSave(object parameter) { return true; }
+}
+Nieuwe manier (met toolkit):
+csharp
+public partial class ModernViewModel : ObservableObject
+{
+    [RelayCommand]
+    private void Save()
+    {
+        // Save logic - veel eenvoudiger!
+    }
+    
+    [RelayCommand(CanExecute = nameof(CanSave))]
+    private void SaveWithCondition()
+    {
+        // Save logic met voorwaarde
+    }
+    
+    private bool CanSave() => !string.IsNullOrEmpty(SomeProperty);
+}
+Voordelen:
+[RelayCommand] attribute genereert automatisch ICommand properties
+Minder boilerplate code (geen handmatige RelayCommand instanties)
+Automatische PropertyChanged notifications voor CanExecute
+Async commands support met [AsyncRelayCommand]
+📊 CommunityToolkit.Mvvm.ComponentModel
+Wat het doet:
+Verzorgt Property Change Notifications - zorgt ervoor dat de UI automatisch updates wanneer ViewModel properties veranderen.
+
+Oude manier:
+csharp
+public class OldViewModel : INotifyPropertyChanged
+{
+    private string _name;
+    public string Name
+    {
+        get => _name;
+        set
+        {
+            if (_name != value)
+            {
+                _name = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(DisplayName)); // Dependent property
+            }
+        }
+    }
+    
+    public string DisplayName => $"Naam: {Name}";
+    
+    public event PropertyChangedEventHandler PropertyChanged;
+    
+    protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+Nieuwe manier:
+csharp
+public partial class ModernViewModel : ObservableObject
+{
+    [ObservableProperty]
+    private string name;
+    
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayName))] // Auto-update dependent properties
+    private string firstName;
+    
+    public string DisplayName => $"Naam: {Name}";
+}
+Voordelen:
+[ObservableProperty] attribute genereert automatisch properties met change notifications
+Source generators maken de code tijdens compile time
+[NotifyPropertyChangedFor] voor dependent properties
+Veel minder code (90% reductie!)
+🏗️ PRAKTISCH VOORBEELD VOOR JOUW EXCEL CLONE
+Complete ViewModel voor je project:
+csharp
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using System.Collections.ObjectModel;
+
+public partial class WorksheetViewModel : ObservableObject
+{
+    // Properties met automatische change notifications
+    [ObservableProperty]
+    private string name = "Werkblad1";
+    
+    [ObservableProperty]
+    private ObservableCollection<CellViewModel> cells = new();
+    
+    [ObservableProperty]
+    private CellViewModel? selectedCell;
+    
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSelectedCell))]
+    private string selectedCellFormula = string.Empty;
+    
+    // Computed property
+    public bool HasSelectedCell => SelectedCell != null;
+    
+    // Commands met automatische ICommand generatie
+    [RelayCommand]
+    private void AddRow()
+    {
+        // Rij toevoegen logic
+    }
+    
+    [RelayCommand(CanExecute = nameof(HasSelectedCell))]
+    private void DeleteRow()
+    {
+        // Rij verwijderen - alleen mogelijk als er een cel geselecteerd is
+    }
+    
+    [RelayCommand]
+    private async Task SaveWorksheetAsync()
+    {
+        // Async save logic
+        await SaveToDatabase();
+    }
+    
+    [RelayCommand]
+    private void CopyCell()
+    {
+        if (SelectedCell != null)
+        {
+            // Copy logic
+        }
+    }
+}
+In je XAML binding:
+xml
+<!-- Properties binden automatisch -->
+<TextBlock Text="{Binding Name}"/>
+<DataGrid ItemsSource="{Binding Cells}" SelectedItem="{Binding SelectedCell}"/>
+<TextBox Text="{Binding SelectedCellFormula}"/>
+
+<!-- Commands binden automatisch -->
+<Button Command="{Binding AddRowCommand}" Content="Rij toevoegen"/>
+<Button Command="{Binding DeleteRowCommand}" Content="Rij verwijderen"/>
+<Button Command="{Binding SaveWorksheetCommand}" Content="Opslaan"/>
+⚡ GEGENEREERDE CODE
+De source generators maken automatisch code zoals:
+
+csharp
+// Gegenereerd door [ObservableProperty]
+public string Name
+{
+    get => name;
+    set => SetProperty(ref name, value);
+}
+
+// Gegenereerd door [RelayCommand]  
+public ICommand AddRowCommand { get; }
+🎯 WAAROM GEBRUIKEN VOOR JOUW PROJECT?
+✅ Voordelen:
+90% minder code voor MVVM boilerplate
+Minder bugs (geen handmatige PropertyChanged calls vergeten)
+Betere performance (source generators, geen reflection)
+Modern en ondersteund door Microsoft
+IntelliSense support voor generated members
+✅ Perfect voor je vereisten:
+Binding tussen Views en ViewModels ✅
+Commands voor alle menu/button actions ✅
+Property notifications voor UI updates ✅
+Professional code die makkelijk te onderhouden is ✅
+Dit maakt je MVVM code veel schoner en gemakkelijker te onderhouden!

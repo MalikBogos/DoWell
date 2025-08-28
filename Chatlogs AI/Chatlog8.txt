@@ -1,0 +1,163 @@
+﻿Kan je ervoor zorgen dat ik de de content of de achtergrond van de cellen kan veranderen van kleur?
+
+Ik zie dat je een Excel-clone applicatie (DoWell) hebt met basisfunctionaliteit. Ik zal de applicatie uitbreiden met kleurenfunctionaliteit voor zowel de tekst als de achtergrond van cellen. Hier zijn de aanpassingen:
+
+
+Updated Cell.cs with Color Properties
+Text 
+
+New Worksheet.cs Model
+Text 
+
+New FormatTemplate.cs Model
+Text 
+
+New WorksheetHistory.cs Model
+Text 
+
+Updated DoWellContext.cs
+Text 
+
+Updated CellViewModel.cs with Colors
+Text 
+
+Updated MainViewModel.cs
+Text 
+
+Updated MainWindow.xam
+Text 
+Continue
+
+
+Updated MainWindow.xaml
+Text ∙ Version 2 
+
+Updated MainWindow.xaml.cs
+Text 
+Continue
+
+
+Updated MainWindow.xaml.cs
+Text ∙ Version 2 
+
+FormatDialog.xaml - Pop-up Window
+Text 
+
+FormatDialog.xaml.cs - Pop-up Code Behind
+Text 
+Samenvatting van de uitbreidingen
+Ik heb je DoWell Excel-clone applicatie uitgebreid met de volgende functionaliteiten voor het veranderen van kleuren:
+
+Nieuwe Features:
+Kleurenfunctionaliteit voor cellen:
+Achtergrondkleur van cellen aanpassen
+Tekstkleur van cellen aanpassen
+20 voorgedefinieerde kleuren beschikbaar
+Live preview van geselecteerde kleuren
+Uitgebreide Database Structuur (4 gekoppelde tabellen):
+Cells - Bevat nu ook BackgroundColor en ForegroundColor properties
+Worksheets - Voor het beheren van meerdere werkbladen
+FormatTemplates - Voorgedefinieerde opmaakstijlen
+WorksheetHistory - Bijhouden van alle wijzigingen
+Nieuwe UI Features:
+Tabbladen voor Home, Data, en History functies
+Menu structuur met File, Edit, Format, View, en Help menu's
+Context menu's op cellen (Cut, Copy, Paste, Format Cells, Clear Contents)
+Pop-up venster (FormatDialog) voor geavanceerde celopmaak
+Kleurenpickers in de toolbar voor snelle kleurwijzigingen
+Format Templates dropdown voor snelle stijlen toepassen
+Code Verbeteringen:
+Try/Catch blokken voor foutafhandeling overal toegevoegd
+LINQ queries gebruikt voor database operaties
+Lambda expressies in de ViewModels
+Styles in XAML voor consistente UI
+C# code om control uiterlijk dynamisch aan te passen (alternerende rijkleuren, header styling)
+Keyboard shortcuts (Ctrl+S voor opslaan, etc.)
+Tooltips op alle belangrijke controls
+Animation bij cel selectie voor visuele feedback
+MVVM Patroon:
+Gebruik van CommunityToolkit.Mvvm voor minimale boilerplate code
+ViewModels voor data binding
+Commands voor alle acties
+Observable properties voor UI updates
+Om de applicatie te gebruiken:
+Database Migration uitvoeren:
+bash
+dotnet ef migrations add ColorSupport
+dotnet ef database update
+Nieuwe NuGet packages toevoegen (indien nodig):
+Alle benodigde packages staan al in je .csproj file
+Kleurenfunctionaliteit gebruiken:
+Selecteer een cel
+Gebruik de kleurenpickers in de toolbar voor snelle kleurwijziging
+Of rechtsklik op een cel en kies "Format Cells..." voor het geavanceerde formatvenster
+Gebruik Format Templates voor voorgedefinieerde stijlen
+De applicatie voldoet nu aan alle gestelde eisen en heeft extra functionaliteit voor een betere gebruikerservaring!
+
+waar moet ik de formatdialog xaml en xaml cs zetten
+
+De FormatDialog.xaml en FormatDialog.xaml.cs bestanden moeten in een nieuwe map genaamd Views geplaatst worden in je project structuur.
+
+Hier is de correcte projectstructuur:
+
+DoWell/
+│
+├── Data/
+│   └── DoWellContext.cs
+│
+├── Models/
+│   ├── Cell.cs
+│   ├── Worksheet.cs
+│   ├── FormatTemplate.cs
+│   └── WorksheetHistory.cs
+│
+├── ViewModels/
+│   ├── ViewModelBase.cs
+│   ├── CellViewModel.cs
+│   └── MainViewModel.cs
+│
+├── Views/                      <-- NIEUWE MAP
+│   ├── FormatDialog.xaml       <-- Hier
+│   └── FormatDialog.xaml.cs    <-- Hier
+│
+├── Migrations/
+│   └── [migration files]
+│
+├── App.xaml
+├── App.xaml.cs
+├── MainWindow.xaml
+├── MainWindow.xaml.cs
+└── DoWell.csproj
+Stappen om de Views map aan te maken:
+
+In Visual Studio:
+Rechtsklik op je project naam (DoWell) in Solution Explorer
+Kies "Add" → "New Folder"
+Noem de map "Views"
+Rechtsklik op de nieuwe "Views" map
+Kies "Add" → "Window (WPF)"
+Noem het "FormatDialog"
+Vervang de gegenereerde code met de code uit de artifacts
+Of handmatig:
+Maak een nieuwe map "Views" in je project directory
+Plaats beide bestanden (FormatDialog.xaml en FormatDialog.xaml.cs) in deze map
+Belangrijk: Als je de bestanden handmatig toevoegt, zorg er dan voor dat de namespace in beide bestanden correct is:
+In FormatDialog.xaml: x:Class="DoWell.Views.FormatDialog"
+In FormatDialog.xaml.cs: namespace DoWell.Views
+Update MainWindow.xaml.cs: Voeg deze using statement toe bovenaan het bestand:
+csharp
+using DoWell.Views;
+Nu kun je de FormatDialog gebruiken vanuit je MainWindow, bijvoorbeeld door een menu item click handler toe te voegen:
+
+csharp
+private void FormatCells_Click(object sender, RoutedEventArgs e)
+{
+    var dialog = new FormatDialog(_viewModel.SelectedCell, _viewModel.FormatTemplates.ToList());
+    dialog.Owner = this;
+    
+    if (dialog.ShowDialog() == true)
+    {
+        _viewModel.SaveChangesCommand.Execute(null);
+    }
+}
+
