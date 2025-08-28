@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DoWell.Migrations
 {
     [DbContext(typeof(DoWellContext))]
-    [Migration("20250826202341_InitialCreate")]
+    [Migration("20250828121817_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

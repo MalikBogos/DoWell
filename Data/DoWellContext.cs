@@ -16,14 +16,14 @@ namespace DoWell.Data
             optionsBuilder
                 .UseLazyLoadingProxies()
                 .UseSqlServer(
-                    @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=DoWellDB;Integrated Security=True;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False",
-                    sqlServerOptionsAction: sqlOptions =>
-                    {
-                        sqlOptions.EnableRetryOnFailure(
-                            maxRetryCount: 5,
-                            maxRetryDelay: TimeSpan.FromSeconds(30),
-                            errorNumbersToAdd: null);
-                    });
+                    @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=DoWellDB;Integrated Security=True;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False");
+                    //sqlServerOptionsAction: sqlOptions =>
+                    //{
+                    //    sqlOptions.EnableRetryOnFailure(
+                    //        maxRetryCount: 5,
+                    //        maxRetryDelay: TimeSpan.FromSeconds(30),
+                    //        errorNumbersToAdd: null);
+                    //});
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
