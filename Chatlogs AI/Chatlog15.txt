@@ -1,0 +1,23 @@
+﻿ok use the info in the readme to make this:
+Bij je inzending is er een lijst van alle geraadpleegde bronnen. Voor een softwareproject is dat een readme met alle gebruikte libraries, frameworks, chatgpt logs, etc.EditBased on the provided code files, I'll create a README.md file that documents all the libraries, frameworks, and resources used in the DoWell Excel clone project.DoWell Project READMEDocument # DoWell - Excel Clone Application
+
+## Project Description
+DoWell is a simplified Microsoft Excel clone application built with WPF and .NET 8. It provides basic spreadsheet functionality including cell editing, formatting, and file operations.
+
+## FeRetryBin dutchEditDoWell Project READMEDocument ∙ Version 2 # DoWell - Excel Clone Applicatie
+
+## Projectbeschrijving
+DoWell is een vereenvoudigde Microsoft Excel clone applicatie gebouwd met WPF en .NET 8. Het biedt basis spreadsheet functionaliteit inclusief cel bewerking, opmaak, en bestandsbewerkingen.
+
+#Hier is een complete README.md in het Nederlands die alle gebruikte libraries, frameworks, en bronnen documenteert voor je DoWell Excel clone project. De README bevat:
+
+Projectbeschrijving en functionaliteiten
+Volledige lijst van alle NuGet packages met versienummers
+Technologie stack details
+Project structuur overzicht
+Database informatie
+Gebruikte ontwikkeltools
+Externe bronnen en referenties
+Systeemvereisten en installatie-instructies
+
+Deze README voldoet aan de eis voor een lijst van alle geraadpleegde bronnen en gebruikte libraries/frameworks voor je software project inzending.
