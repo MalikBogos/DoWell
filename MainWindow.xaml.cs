@@ -19,13 +19,11 @@ namespace DoWell
     {
         private MainViewModel _viewModel = null!;
 
-        // Replace the constructor in MainWindow.xaml.cs with:
         public MainWindow()
         {
             InitializeComponent();
             _viewModel = (MainViewModel)DataContext;
 
-            // Add keyboard shortcuts after _viewModel is initialized
             if (_viewModel != null)
             {
                 InputBindings.Add(new KeyBinding(_viewModel.FindCommand, Key.F, ModifierKeys.Control));
@@ -49,11 +47,9 @@ namespace DoWell
         {
             Dispatcher.BeginInvoke(new Action(() =>
             {
-                // Clear columns first to remove old bindings
                 MainDataGrid.Columns.Clear();
                 MainDataGrid.ItemsSource = null;
 
-                // Then rebuild
                 UpdateDataGridColumns();
             }));
         }
@@ -104,7 +100,6 @@ namespace DoWell
                 MainDataGrid.ItemsSource = null;
                 MainDataGrid.Columns.Clear();
 
-                // Add row header column with a simpler binding
                 var rowHeaderColumn = new DataGridTextColumn
                 {
                     Header = "",
@@ -117,7 +112,6 @@ namespace DoWell
                 };
                 MainDataGrid.Columns.Add(rowHeaderColumn);
 
-                // Rest of the method stays the same...
                 for (int col = 0; col < _viewModel.ColumnCount; col++)
                 {
                     var column = new DataGridTemplateColumn
@@ -161,7 +155,6 @@ namespace DoWell
             var template = new DataTemplate();
             var factory = new FrameworkElementFactory(typeof(TextBlock));
 
-            // Direct binding naar specifieke kolom met fallback values
             factory.SetBinding(TextBlock.TextProperty, new Binding($"[{columnIndex}].Value")
             {
                 FallbackValue = "",
@@ -283,7 +276,6 @@ namespace DoWell
             }
         }
 
-        // Event handlers
         private void BoldButton_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -471,7 +463,6 @@ namespace DoWell
         }
     }
 
-    // Eenvoudige converters voor text formatting
     public class BoolToFontWeightConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
