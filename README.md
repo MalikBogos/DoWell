@@ -32,7 +32,7 @@ chatlog12 - https://claude.ai/chat/acce5b74-4725-46fb-8bc7-10d01eceb2e8
 
 chatlog13 - https://claude.ai/chat/0dc91c10-b2f8-46ae-90db-eedf6a792a0a
 
-chatlog14 - 
+chatlog14 - https://claude.ai/chat/6717c36e-be07-473b-b151-9b74b9d3a6e5
 
 https://www.youtube.com/watch?v=fguYA_qzmYw -> algemene informatie
 

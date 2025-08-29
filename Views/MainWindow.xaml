@@ -1,10 +1,11 @@
 ﻿<!-- MainWindow.xaml -->
-<Window x:Class="DoWell.MainWindow"
+<Window x:Class="DoWell.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:DoWell.ViewModels"
+        xmlns:converters="clr-namespace:DoWell.Converters"
         mc:Ignorable="d"
         Title="DoWell - Excel Clone" Height="750" Width="1300"
         WindowStartupLocation="CenterScreen">
@@ -45,6 +46,12 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+
+        <converters:BoolToFontWeightConverter x:Key="BoolToFontWeightConverter"/>
+        <converters:BoolToFontStyleConverter x:Key="BoolToFontStyleConverter"/>
+        <converters:BoolToTextDecorationConverter x:Key="BoolToTextDecorationConverter"/>
+        <converters:SimpleRowNumberConverter x:Key="SimpleRowNumberConverter"/>
+        <converters:RowNumberConverter x:Key="RowNumberConverter"/>
 
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </Window.Resources>

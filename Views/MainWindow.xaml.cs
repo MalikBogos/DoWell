@@ -12,8 +12,9 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using DoWell.Converters;
 
-namespace DoWell
+namespace DoWell.Views
 {
     public partial class MainWindow : Window
     {
@@ -102,6 +103,7 @@ namespace DoWell
                 MainDataGrid.ItemsSource = null;
                 MainDataGrid.Columns.Clear();
 
+                // Add row header column
                 var rowHeaderColumn = new DataGridTextColumn
                 {
                     Header = "",
@@ -109,11 +111,12 @@ namespace DoWell
                     IsReadOnly = true,
                     Binding = new Binding("[0].Row")
                     {
-                        Converter = new SimpleRowNumberConverter()
+                        Converter = (IValueConverter)FindResource("SimpleRowNumberConverter")
                     }
                 };
                 MainDataGrid.Columns.Add(rowHeaderColumn);
 
+                // Add data columns
                 for (int col = 0; col < _viewModel.ColumnCount; col++)
                 {
                     var column = new DataGridTemplateColumn
@@ -135,67 +138,59 @@ namespace DoWell
             }
         }
 
-        public class SimpleRowNumberConverter : IValueConverter
-        {
-            public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-            {
-                if (value is int rowIndex)
-                {
-                    return (rowIndex + 1).ToString();
-                }
-                return "1";
-            }
 
-            public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-            {
-                throw new NotImplementedException();
-            }
-        }
 
         private DataTemplate CreateCellTemplate(int columnIndex)
         {
             var template = new DataTemplate();
             var factory = new FrameworkElementFactory(typeof(TextBlock));
 
+            // Text binding
             factory.SetBinding(TextBlock.TextProperty, new Binding($"[{columnIndex}].Value")
             {
                 FallbackValue = "",
                 TargetNullValue = ""
             });
 
+            // Background binding
             factory.SetBinding(TextBlock.BackgroundProperty, new Binding($"[{columnIndex}].BackgroundBrush")
             {
                 FallbackValue = Brushes.White,
                 TargetNullValue = Brushes.White
             });
 
+            // Foreground binding
             factory.SetBinding(TextBlock.ForegroundProperty, new Binding($"[{columnIndex}].ForegroundBrush")
             {
                 FallbackValue = Brushes.Black,
                 TargetNullValue = Brushes.Black
             });
 
+            // Bold binding with converter from resources
             factory.SetBinding(TextBlock.FontWeightProperty, new Binding($"[{columnIndex}].IsBold")
             {
-                Converter = new BoolToFontWeightConverter(),
+                Converter = (IValueConverter)FindResource("BoolToFontWeightConverter"),
                 FallbackValue = FontWeights.Normal,
                 TargetNullValue = FontWeights.Normal
             });
 
+            // Italic binding with converter from resources
             factory.SetBinding(TextBlock.FontStyleProperty, new Binding($"[{columnIndex}].IsItalic")
             {
-                Converter = new BoolToFontStyleConverter(),
+                Converter = (IValueConverter)FindResource("BoolToFontStyleConverter"),
                 FallbackValue = FontStyles.Normal,
                 TargetNullValue = FontStyles.Normal
             });
 
+            // Underline binding with converter from resources
             factory.SetBinding(TextBlock.TextDecorationsProperty, new Binding($"[{columnIndex}].IsUnderline")
             {
-                Converter = new BoolToTextDecorationConverter(),
+                Converter = (IValueConverter)FindResource("BoolToTextDecorationConverter"),
                 FallbackValue = null,
                 TargetNullValue = null
             });
 
+            // Set padding
             factory.SetValue(TextBlock.PaddingProperty, new Thickness(2));
 
             template.VisualTree = factory;
@@ -207,7 +202,7 @@ namespace DoWell
             var template = new DataTemplate();
             var factory = new FrameworkElementFactory(typeof(TextBox));
 
-            // Direct binding naar de specifieke kolom index met Path
+            // Text binding for editing
             factory.SetBinding(TextBox.TextProperty, new Binding($"[{columnIndex}].Value")
             {
                 UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged,
@@ -215,6 +210,37 @@ namespace DoWell
                 FallbackValue = "",
                 TargetNullValue = ""
             });
+
+            // Optional: Also bind styling to the TextBox during editing
+            factory.SetBinding(TextBox.BackgroundProperty, new Binding($"[{columnIndex}].BackgroundBrush")
+            {
+                FallbackValue = Brushes.White,
+                TargetNullValue = Brushes.White
+            });
+
+            factory.SetBinding(TextBox.ForegroundProperty, new Binding($"[{columnIndex}].ForegroundBrush")
+            {
+                FallbackValue = Brushes.Black,
+                TargetNullValue = Brushes.Black
+            });
+
+            factory.SetBinding(TextBox.FontWeightProperty, new Binding($"[{columnIndex}].IsBold")
+            {
+                Converter = (IValueConverter)FindResource("BoolToFontWeightConverter"),
+                FallbackValue = FontWeights.Normal,
+                TargetNullValue = FontWeights.Normal
+            });
+
+            factory.SetBinding(TextBox.FontStyleProperty, new Binding($"[{columnIndex}].IsItalic")
+            {
+                Converter = (IValueConverter)FindResource("BoolToFontStyleConverter"),
+                FallbackValue = FontStyles.Normal,
+                TargetNullValue = FontStyles.Normal
+            });
+
+            // Set padding
+            factory.SetValue(TextBox.PaddingProperty, new Thickness(2));
+            factory.SetValue(TextBox.BorderThicknessProperty, new Thickness(0));
 
             template.VisualTree = factory;
             return template;
@@ -465,87 +491,5 @@ namespace DoWell
         }
     }
 
-    public class BoolToFontWeightConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        {
-            try
-            {
-                return (bool)value ? FontWeights.Bold : FontWeights.Normal;
-            }
-            catch
-            {
-                return FontWeights.Normal;
-            }
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        {
-            return FontWeights.Bold.Equals(value);
-        }
-    }
-
-    public class BoolToFontStyleConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        {
-            try
-            {
-                return (bool)value ? FontStyles.Italic : FontStyles.Normal;
-            }
-            catch
-            {
-                return FontStyles.Normal;
-            }
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        {
-            return FontStyles.Italic.Equals(value);
-        }
-    }
-
-    public class BoolToTextDecorationConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        {
-            try
-            {
-                return (bool)value ? TextDecorations.Underline : null;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        {
-            return value != null && ((TextDecorationCollection)value).Count > 0;
-        }
-    }
-
-    public class RowNumberConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        {
-            try
-            {
-                if (value is System.Collections.ObjectModel.ObservableCollection<CellViewModel> row && row.Count > 0)
-                {
-                    return (row[0].Row + 1).ToString();
-                }
-                return "1";
-            }
-            catch
-            {
-                return "1";
-            }
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
+    
 }

@@ -1,1 +1,1458 @@
-﻿
+﻿Kan je ervoor zorgen dat de find functie en de save/save as functies allebei werkenEditLooking at your code, I can see that the Find functionality is mentioned in the menu but not implemented, and the Save/Save As functionality needs some refinement. Let me provide the necessary changes:
+1. Add Find Dialog
+Create a new file Views/FindDialog.xaml:Views/FindDialog.xamlText <Window x:Class="DoWell.Views.FindDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Find" Height="200" Width="400"
+        WindowStartupLocaCreate a new file Views/FindDialog.xaml.cs:Views/FindDialog.xaml.csText using System.Windows;
+using DoWell.ViewModels;
+
+namespace DoWell.Views
+{
+    public partial class FindDialog : Window
+    {
+        private MainViewModel _viewModel;
+        private int _currentRow = 0;
+        private int _currentCol = 0;
+
+        p2. Update MainViewModel.cs
+Add the following to ViewModels/MainViewModel.cs (add these methods to the existing class):
+csharp// Add this field at the top of the class with other fields
+private string? _lastSaveFilePath;
+
+// Add these commands
+[RelayCommand]
+private void Find()
+{
+    var findDialog = new FindDialog(this);
+    findDialog.ShowDialog();
+}
+
+[RelayCommand]
+private void SaveAs()
+{
+    SaveWorkbookAs();
+}
+
+// Modify the existing SaveWorkbook method to:
+[RelayCommand]
+private void SaveWorkbook()
+{
+    if (!string.IsNullOrEmpty(_lastSaveFilePath))
+    {
+        // If we have a previous save location, save there directly
+        SaveToFile(_lastSaveFilePath);
+    }
+    else
+    {
+        // Otherwise show Save As dialog
+        SaveWorkbookAs();
+    }
+}
+
+// Add new SaveWorkbookAs method:
+private void SaveWorkbookAs()
+{
+    try
+    {
+        var saveDialog = new SaveFileDialog
+        {
+            Filter = "DoWell Files (*.dwl)|*.dwl|JSON Files (*.json)|*.json",
+            DefaultExt = ".dwl",
+            FileName = CurrentWorkbook?.Name ?? "Workbook"
+        };
+
+        if (saveDialog.ShowDialog() == true)
+        {
+            SaveToFile(saveDialog.FileName);
+            _lastSaveFilePath = saveDialog.FileName;
+        }
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show($"Error saving workbook: {ex.Message}", "Save Error",
+            MessageBoxButton.OK, MessageBoxImage.Error);
+        SetStatusMessage($"Error saving workbook: {ex.Message}", false);
+    }
+}
+
+// Add helper method for actual saving:
+private void SaveToFile(string filePath)
+{
+    try
+    {
+        SaveChangesToDatabase();
+
+        var exportData = new
+        {
+            Workbook = new
+            {
+                CurrentWorkbook.WorkbookId,
+                CurrentWorkbook.Name,
+                CurrentWorkbook.Author,
+                CurrentWorkbook.CreatedDate,
+                CurrentWorkbook.LastSavedDate
+            },
+            Cells = _context.Cells
+                .Where(c => c.WorkbookId == CurrentWorkbook!.WorkbookId)
+                .Select(c => new
+                {
+                    c.CellId,
+                    c.Row,
+                    c.Column,
+                    c.Value,
+                    c.IsBold,
+                    c.IsItalic,
+                    c.IsUnderline,
+                    c.BackgroundColor,
+                    c.ForegroundColor,
+                    c.WorkbookId,
+                    c.FormatTemplateId
+                })
+                .ToList(),
+            Templates = _context.FormatTemplates
+                .Where(ft => ft.WorkbookId == CurrentWorkbook!.WorkbookId)
+                .Select(ft => new
+                {
+                    ft.FormatTemplateId,
+                    ft.Name,
+                    ft.IsBold,
+                    ft.IsItalic,
+                    ft.IsUnderline,
+                    ft.BackgroundColor,
+                    ft.ForegroundColor,
+                    ft.FontFamily,
+                    ft.FontSize,
+                    ft.WorkbookId
+                })
+                .ToList()
+        };
+
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
+        };
+
+        var json = JsonSerializer.Serialize(exportData, options);
+        File.WriteAllText(filePath, json);
+
+        if (CurrentWorkbook != null)
+        {
+            CurrentWorkbook.FilePath = filePath;
+            CurrentWorkbook.LastSavedDate = DateTime.Now;
+            _context.SaveChanges();
+        }
+
+        SetStatusMessage($"Workbook saved to {Path.GetFileName(filePath)}", true);
+    }
+    catch (Exception ex)
+    {
+        throw; // Re-throw to be caught by calling method
+    }
+}
+3. Update MainWindow.xaml
+In MainWindow.xaml, update the menu section to add Save As and connect Find:
+xml<!-- Replace the existing File menu with: -->
+<MenuItem Header="_File">
+    <MenuItem Header="_New Workbook" Command="{Binding NewWorkbookCommand}" InputGestureText="Ctrl+N"/>
+    <MenuItem Header="_Open..." Command="{Binding OpenWorkbookCommand}" InputGestureText="Ctrl+O"/>
+    <MenuItem Header="_Save" Command="{Binding SaveWorkbookCommand}" InputGestureText="Ctrl+S"/>
+    <MenuItem Header="Save _As..." Command="{Binding SaveAsCommand}" InputGestureText="Ctrl+Shift+S"/>
+    <Separator/>
+    <MenuItem Header="E_xit" Click="Exit_Click"/>
+</MenuItem>
+
+<!-- Replace the existing Edit menu with: -->
+<MenuItem Header="_Edit">
+    <MenuItem Header="Cu_t" Command="ApplicationCommands.Cut" InputGestureText="Ctrl+X"/>
+    <MenuItem Header="_Copy" Command="ApplicationCommands.Copy" InputGestureText="Ctrl+C"/>
+    <MenuItem Header="_Paste" Command="ApplicationCommands.Paste" InputGestureText="Ctrl+V"/>
+    <Separator/>
+    <MenuItem Header="_Find..." Command="{Binding FindCommand}" InputGestureText="Ctrl+F"/>
+</MenuItem>
+4. Update MainWindow.xaml.cs
+In MainWindow.xaml.cs, add keyboard shortcut support in the constructor after InitializeComponent():
+csharp// Add this in the constructor after InitializeComponent():
+InputBindings.Add(new KeyBinding(_viewModel.FindCommand, Key.F, ModifierKeys.Control));
+InputBindings.Add(new KeyBinding(_viewModel.SaveAsCommand, Key.S, ModifierKeys.Control | ModifierKeys.Shift));
+These changes will:
+
+Add a working Find dialog that searches through all cells
+Implement proper Save/Save As functionality where Save remembers the last location
+Add keyboard shortcuts (Ctrl+F for Find, Ctrl+Shift+S for Save As)
+RetryBSystem.NullReferenceException
+  HResult=0x80004003
+  Message=Object reference not set to an instance of an object.
+  Source=DoWell
+  StackTrace:
+   at DoWell.MainWindow..ctor() in C:\Users\cover\Desktop\EHB\.NET Frameworks\DoWell\MainWindow.xaml.cs:line 25EditThe error occurs because you're trying to access _viewModel before it's initialized. Here's the fix for MainWindow.xaml.cs:
+csharp// Replace the constructor in MainWindow.xaml.cs with:
+public MainWindow()
+{
+    InitializeComponent();
+    _viewModel = (MainViewModel)DataContext;
+    
+    // Add keyboard shortcuts after _viewModel is initialized
+    if (_viewModel != null)
+    {
+        InputBindings.Add(new KeyBinding(_viewModel.FindCommand, Key.F, ModifierKeys.Control));
+        InputBindings.Add(new KeyBinding(_viewModel.SaveAsCommand, Key.S, ModifierKeys.Control | ModifierKeys.Shift));
+    }
+    
+    Loaded += MainWindow_Loaded;
+}
+This ensures that _viewModel is properly initialized before we try to use it for the keyboard bindings.RetryBok this worked but can you now also add functionality to make new workbook, open workbook based on saveEditLooking at your code, I can see that NewWorkbook already exists but OpenWorkbook needs to be fully implemented to actually load the saved files. Here's the necessary code:
+1. Update MainViewModel.cs
+In ViewModels/MainViewModel.cs, replace the existing OpenWorkbook method with this complete implementation:
+csharp[RelayCommand]
+private void OpenWorkbook()
+{
+    try
+    {
+        var openDialog = new OpenFileDialog
+        {
+            Filter = "DoWell Files (*.dwl)|*.dwl|JSON Files (*.json)|*.json",
+            DefaultExt = ".dwl"
+        };
+
+        if (openDialog.ShowDialog() == true)
+        {
+            var result = MessageBox.Show(
+                "This will replace the current workbook. Save changes first?",
+                "Open Workbook",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                SaveWorkbook();
+            }
+            else if (result == MessageBoxResult.Cancel)
+            {
+                return;
+            }
+
+            LoadFromFile(openDialog.FileName);
+            _lastSaveFilePath = openDialog.FileName;
+        }
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show($"Error opening workbook: {ex.Message}", "Open Error",
+            MessageBoxButton.OK, MessageBoxImage.Error);
+        SetStatusMessage($"Error opening workbook: {ex.Message}", false);
+    }
+}
+
+// Add this new method for loading from file:
+private void LoadFromFile(string filePath)
+{
+    try
+    {
+        var json = File.ReadAllText(filePath);
+        
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+        
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        
+        // Clear existing data
+        var existingCells = _context.Cells.Where(c => c.WorkbookId == CurrentWorkbook.WorkbookId).ToList();
+        _context.Cells.RemoveRange(existingCells);
+        
+        var existingTemplates = _context.FormatTemplates.Where(t => t.WorkbookId == CurrentWorkbook.WorkbookId).ToList();
+        _context.FormatTemplates.RemoveRange(existingTemplates);
+        
+        _context.SaveChanges();
+        
+        // Update workbook info
+        var workbookElement = root.GetProperty("workbook");
+        CurrentWorkbook.Name = workbookElement.GetProperty("name").GetString();
+        CurrentWorkbook.Author = workbookElement.GetProperty("author").GetString();
+        CurrentWorkbook.FilePath = filePath;
+        CurrentWorkbook.LastSavedDate = DateTime.Now;
+        
+        // Load templates first
+        var templatesElement = root.GetProperty("templates");
+        var templateIdMap = new Dictionary<int, int>(); // old ID -> new ID
+        
+        foreach (var templateElement in templatesElement.EnumerateArray())
+        {
+            var oldId = templateElement.GetProperty("formatTemplateId").GetInt32();
+            var template = new FormatTemplate
+            {
+                Name = templateElement.GetProperty("name").GetString(),
+                IsBold = templateElement.GetProperty("isBold").GetBoolean(),
+                IsItalic = templateElement.GetProperty("isItalic").GetBoolean(),
+                IsUnderline = templateElement.GetProperty("isUnderline").GetBoolean(),
+                BackgroundColor = templateElement.GetProperty("backgroundColor").GetString(),
+                ForegroundColor = templateElement.GetProperty("foregroundColor").GetString(),
+                FontFamily = templateElement.GetProperty("fontFamily").GetString(),
+                FontSize = templateElement.GetProperty("fontSize").GetDouble(),
+                WorkbookId = CurrentWorkbook.WorkbookId
+            };
+            
+            _context.FormatTemplates.Add(template);
+            _context.SaveChanges();
+            templateIdMap[oldId] = template.FormatTemplateId;
+        }
+        
+        // Load cells
+        var cellsElement = root.GetProperty("cells");
+        foreach (var cellElement in cellsElement.EnumerateArray())
+        {
+            var cell = new Cell
+            {
+                Row = cellElement.GetProperty("row").GetInt32(),
+                Column = cellElement.GetProperty("column").GetInt32(),
+                Value = cellElement.GetProperty("value").GetString() ?? "",
+                IsBold = cellElement.GetProperty("isBold").GetBoolean(),
+                IsItalic = cellElement.GetProperty("isItalic").GetBoolean(),
+                IsUnderline = cellElement.GetProperty("isUnderline").GetBoolean(),
+                BackgroundColor = cellElement.GetProperty("backgroundColor").GetString() ?? "#FFFFFF",
+                ForegroundColor = cellElement.GetProperty("foregroundColor").GetString() ?? "#000000",
+                WorkbookId = CurrentWorkbook.WorkbookId
+            };
+            
+            // Map template ID if exists
+            if (cellElement.TryGetProperty("formatTemplateId", out var templateIdElement) && 
+                templateIdElement.ValueKind != JsonValueKind.Null)
+            {
+                var oldTemplateId = templateIdElement.GetInt32();
+                if (templateIdMap.ContainsKey(oldTemplateId))
+                {
+                    cell.FormatTemplateId = templateIdMap[oldTemplateId];
+                }
+            }
+            
+            _context.Cells.Add(cell);
+        }
+        
+        _context.SaveChanges();
+        
+        // Reload templates and grid
+        FormatTemplates = new ObservableCollection<FormatTemplate>(
+            _context.FormatTemplates.Where(t => t.WorkbookId == CurrentWorkbook.WorkbookId).ToList());
+        LoadWorkbookData();
+        
+        SetStatusMessage($"Opened: {Path.GetFileName(filePath)}", true);
+    }
+    catch (Exception ex)
+    {
+        throw new Exception($"Failed to load workbook: {ex.Message}", ex);
+    }
+}
+
+// Update the NewWorkbook method to clear the last save path:
+[RelayCommand]
+private void NewWorkbook()
+{
+    try
+    {
+        var result = MessageBox.Show("Save current workbook before creating new?",
+            "New Workbook", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            SaveWorkbook();
+        }
+        else if (result == MessageBoxResult.Cancel)
+        {
+            return;
+        }
+
+        // Clear the last save path for new workbook
+        _lastSaveFilePath = null;
+        
+        CurrentWorkbook = CreateNewWorkbook();
+        FormatTemplates.Clear();
+        LoadWorkbookData();
+        SetStatusMessage("New workbook created", true);
+    }
+    catch (Exception ex)
+    {
+        SetStatusMessage($"Error creating new workbook: {ex.Message}", false);
+        MessageBox.Show($"Error creating new workbook: {ex.Message}", "Error",
+            MessageBoxButton.OK, MessageBoxImage.Error);
+    }
+}
+2. Add required using statement
+At the top of ViewModels/MainViewModel.cs, ensure you have:
+csharpusing System.Text.Json;
+This implementation:
+
+New Workbook: Clears current data, creates a fresh workbook, and resets the save path
+Open Workbook: Loads a previously saved .dwl or .json file, including all cells, formatting, and templates
+Save/Save As: Save remembers the file location after first save, Save As always prompts for a new location
+
+The Open function properly deserializes the JSON, maps template IDs correctly, and rebuilds the entire workbook in the database.RetryBfailed to load workbook the given key was not present in the dictionaryEditThe error occurs because the JSON property names don't match exactly. Let's fix the LoadFromFile method to handle the property names correctly:
+In ViewModels/MainViewModel.cs, replace the LoadFromFile method with this corrected version:
+csharpprivate void LoadFromFile(string filePath)
+{
+    try
+    {
+        var json = File.ReadAllText(filePath);
+        
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+        
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        
+        // Clear existing data
+        var existingCells = _context.Cells.Where(c => c.WorkbookId == CurrentWorkbook.WorkbookId).ToList();
+        _context.Cells.RemoveRange(existingCells);
+        
+        var existingTemplates = _context.FormatTemplates.Where(t => t.WorkbookId == CurrentWorkbook.WorkbookId).ToList();
+        _context.FormatTemplates.RemoveRange(existingTemplates);
+        
+        _context.SaveChanges();
+        
+        // Update workbook info - note the capital W in "Workbook"
+        if (root.TryGetProperty("Workbook", out var workbookElement) || 
+            root.TryGetProperty("workbook", out workbookElement))
+        {
+            if (workbookElement.TryGetProperty("Name", out var nameElement) || 
+                workbookElement.TryGetProperty("name", out nameElement))
+            {
+                CurrentWorkbook.Name = nameElement.GetString();
+            }
+            
+            if (workbookElement.TryGetProperty("Author", out var authorElement) || 
+                workbookElement.TryGetProperty("author", out authorElement))
+            {
+                CurrentWorkbook.Author = authorElement.GetString();
+            }
+        }
+        
+        CurrentWorkbook.FilePath = filePath;
+        CurrentWorkbook.LastSavedDate = DateTime.Now;
+        
+        // Load templates first - note the capital T in "Templates"
+        var templateIdMap = new Dictionary<int, int>(); // old ID -> new ID
+        
+        if (root.TryGetProperty("Templates", out var templatesElement) || 
+            root.TryGetProperty("templates", out templatesElement))
+        {
+            foreach (var templateElement in templatesElement.EnumerateArray())
+            {
+                int oldId = 0;
+                if (templateElement.TryGetProperty("FormatTemplateId", out var idElement) || 
+                    templateElement.TryGetProperty("formatTemplateId", out idElement))
+                {
+                    oldId = idElement.GetInt32();
+                }
+                
+                var template = new FormatTemplate
+                {
+                    Name = GetStringProperty(templateElement, "Name", "name") ?? "Default",
+                    IsBold = GetBoolProperty(templateElement, "IsBold", "isBold"),
+                    IsItalic = GetBoolProperty(templateElement, "IsItalic", "isItalic"),
+                    IsUnderline = GetBoolProperty(templateElement, "IsUnderline", "isUnderline"),
+                    BackgroundColor = GetStringProperty(templateElement, "BackgroundColor", "backgroundColor") ?? "#FFFFFF",
+                    ForegroundColor = GetStringProperty(templateElement, "ForegroundColor", "foregroundColor") ?? "#000000",
+                    FontFamily = GetStringProperty(templateElement, "FontFamily", "fontFamily") ?? "Segoe UI",
+                    FontSize = GetDoubleProperty(templateElement, "FontSize", "fontSize", 11),
+                    WorkbookId = CurrentWorkbook.WorkbookId
+                };
+                
+                _context.FormatTemplates.Add(template);
+                _context.SaveChanges();
+                
+                if (oldId > 0)
+                {
+                    templateIdMap[oldId] = template.FormatTemplateId;
+                }
+            }
+        }
+        
+        // Load cells - note the capital C in "Cells"
+        if (root.TryGetProperty("Cells", out var cellsElement) || 
+            root.TryGetProperty("cells", out cellsElement))
+        {
+            foreach (var cellElement in cellsElement.EnumerateArray())
+            {
+                var cell = new Cell
+                {
+                    Row = GetIntProperty(cellElement, "Row", "row"),
+                    Column = GetIntProperty(cellElement, "Column", "column"),
+                    Value = GetStringProperty(cellElement, "Value", "value") ?? "",
+                    IsBold = GetBoolProperty(cellElement, "IsBold", "isBold"),
+                    IsItalic = GetBoolProperty(cellElement, "IsItalic", "isItalic"),
+                    IsUnderline = GetBoolProperty(cellElement, "IsUnderline", "isUnderline"),
+                    BackgroundColor = GetStringProperty(cellElement, "BackgroundColor", "backgroundColor") ?? "#FFFFFF",
+                    ForegroundColor = GetStringProperty(cellElement, "ForegroundColor", "foregroundColor") ?? "#000000",
+                    WorkbookId = CurrentWorkbook.WorkbookId
+                };
+                
+                // Map template ID if exists
+                var oldTemplateId = GetNullableIntProperty(cellElement, "FormatTemplateId", "formatTemplateId");
+                if (oldTemplateId.HasValue && templateIdMap.ContainsKey(oldTemplateId.Value))
+                {
+                    cell.FormatTemplateId = templateIdMap[oldTemplateId.Value];
+                }
+                
+                _context.Cells.Add(cell);
+            }
+        }
+        
+        _context.SaveChanges();
+        
+        // Reload templates and grid
+        FormatTemplates = new ObservableCollection<FormatTemplate>(
+            _context.FormatTemplates.Where(t => t.WorkbookId == CurrentWorkbook.WorkbookId).ToList());
+        LoadWorkbookData();
+        
+        SetStatusMessage($"Opened: {Path.GetFileName(filePath)}", true);
+    }
+    catch (Exception ex)
+    {
+        throw new Exception($"Failed to load workbook: {ex.Message}", ex);
+    }
+}
+
+// Add these helper methods to handle property names with different casing:
+private string? GetStringProperty(JsonElement element, string pascalCase, string camelCase)
+{
+    if (element.TryGetProperty(pascalCase, out var prop) || element.TryGetProperty(camelCase, out prop))
+    {
+        return prop.GetString();
+    }
+    return null;
+}
+
+private bool GetBoolProperty(JsonElement element, string pascalCase, string camelCase)
+{
+    if (element.TryGetProperty(pascalCase, out var prop) || element.TryGetProperty(camelCase, out prop))
+    {
+        return prop.GetBoolean();
+    }
+    return false;
+}
+
+private int GetIntProperty(JsonElement element, string pascalCase, string camelCase)
+{
+    if (element.TryGetProperty(pascalCase, out var prop) || element.TryGetProperty(camelCase, out prop))
+    {
+        return prop.GetInt32();
+    }
+    return 0;
+}
+
+private double GetDoubleProperty(JsonElement element, string pascalCase, string camelCase, double defaultValue)
+{
+    if (element.TryGetProperty(pascalCase, out var prop) || element.TryGetProperty(camelCase, out prop))
+    {
+        return prop.GetDouble();
+    }
+    return defaultValue;
+}
+
+private int? GetNullableIntProperty(JsonElement element, string pascalCase, string camelCase)
+{
+    if (element.TryGetProperty(pascalCase, out var prop) || element.TryGetProperty(camelCase, out prop))
+    {
+        if (prop.ValueKind != JsonValueKind.Null)
+        {
+            return prop.GetInt32();
+        }
+    }
+    return null;
+}
+This updated version:
+
+Handles both PascalCase (C# convention) and camelCase (JSON convention) property names
+Uses TryGetProperty to safely check if properties exist
+Provides default values when properties are missing
+Properly handles nullable properties
+
+The file will now load correctly regardless of whether the JSON uses PascalCase or camelCase property names.RetryBnew workbook, open workbook and probable save and save as don't work properly, can you rewrite themEditI'll rewrite all the file operations to work properly. Here's the complete implementation:
+Update MainViewModel.cs
+In ViewModels/MainViewModel.cs, replace the existing file operation methods with these:
+csharp// Add these fields at the top of the class with other fields
+private string? _currentFilePath;
+private bool _hasUnsavedChanges = false;
+
+// Replace/Add these methods:
+
+[RelayCommand]
+private void NewWorkbook()
+{
+    try
+    {
+        // Check for unsaved changes
+        if (_hasUnsavedChanges)
+        {
+            var result = MessageBox.Show(
+                "You have unsaved changes. Would you like to save them?",
+                "Unsaved Changes",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Warning);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                SaveWorkbook();
+                if (_hasUnsavedChanges) // User cancelled save dialog
+                    return;
+            }
+            else if (result == MessageBoxResult.Cancel)
+            {
+                return;
+            }
+        }
+
+        // Clear existing data from context
+        var allCells = _context.Cells.Where(c => c.WorkbookId == CurrentWorkbook.WorkbookId);
+        _context.Cells.RemoveRange(allCells);
+        
+        var allTemplates = _context.FormatTemplates.Where(t => t.WorkbookId == CurrentWorkbook.WorkbookId);
+        _context.FormatTemplates.RemoveRange(allTemplates);
+        
+        _context.SaveChanges();
+
+        // Reset workbook
+        CurrentWorkbook.Name = "New Workbook";
+        CurrentWorkbook.Author = Environment.UserName;
+        CurrentWorkbook.CreatedDate = DateTime.Now;
+        CurrentWorkbook.LastSavedDate = DateTime.Now;
+        CurrentWorkbook.FilePath = null;
+        _context.SaveChanges();
+
+        // Clear file path and reset state
+        _currentFilePath = null;
+        _hasUnsavedChanges = false;
+
+        // Reset grid to default size
+        RowCount = 10;
+        ColumnCount = 10;
+        
+        // Clear and reinitialize grid
+        GridData.Clear();
+        for (int row = 0; row < RowCount; row++)
+        {
+            var rowData = new ObservableCollection<CellViewModel>();
+            for (int col = 0; col < ColumnCount; col++)
+            {
+                var cell = new Cell
+                {
+                    Row = row,
+                    Column = col,
+                    WorkbookId = CurrentWorkbook.WorkbookId,
+                    Value = "",
+                    BackgroundColor = "#FFFFFF",
+                    ForegroundColor = "#000000"
+                };
+                rowData.Add(new CellViewModel(cell));
+            }
+            GridData.Add(rowData);
+        }
+
+        // Clear format templates
+        FormatTemplates.Clear();
+
+        SetStatusMessage("New workbook created", true);
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show($"Error creating new workbook: {ex.Message}", "Error",
+            MessageBoxButton.OK, MessageBoxImage.Error);
+        SetStatusMessage($"Error: {ex.Message}", false);
+    }
+}
+
+[RelayCommand]
+private void OpenWorkbook()
+{
+    try
+    {
+        // Check for unsaved changes
+        if (_hasUnsavedChanges)
+        {
+            var result = MessageBox.Show(
+                "You have unsaved changes. Would you like to save them?",
+                "Unsaved Changes",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Warning);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                SaveWorkbook();
+                if (_hasUnsavedChanges) // User cancelled save dialog
+                    return;
+            }
+            else if (result == MessageBoxResult.Cancel)
+            {
+                return;
+            }
+        }
+
+        var openDialog = new OpenFileDialog
+        {
+            Filter = "DoWell Files (*.dwl)|*.dwl|JSON Files (*.json)|*.json|All Files (*.*)|*.*",
+            DefaultExt = ".dwl"
+        };
+
+        if (openDialog.ShowDialog() == true)
+        {
+            LoadWorkbookFromFile(openDialog.FileName);
+            _currentFilePath = openDialog.FileName;
+            _hasUnsavedChanges = false;
+        }
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show($"Error opening workbook: {ex.Message}", "Open Error",
+            MessageBoxButton.OK, MessageBoxImage.Error);
+        SetStatusMessage($"Error opening file", false);
+    }
+}
+
+[RelayCommand]
+private void SaveWorkbook()
+{
+    try
+    {
+        if (string.IsNullOrEmpty(_currentFilePath))
+        {
+            // No file path, show Save As dialog
+            SaveAsWorkbook();
+        }
+        else
+        {
+            // Save to existing file
+            SaveWorkbookToFile(_currentFilePath);
+            _hasUnsavedChanges = false;
+            SetStatusMessage($"Saved to {Path.GetFileName(_currentFilePath)}", true);
+        }
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show($"Error saving workbook: {ex.Message}", "Save Error",
+            MessageBoxButton.OK, MessageBoxImage.Error);
+        SetStatusMessage("Error saving file", false);
+    }
+}
+
+[RelayCommand]
+private void SaveAs()
+{
+    SaveAsWorkbook();
+}
+
+private void SaveAsWorkbook()
+{
+    try
+    {
+        var saveDialog = new SaveFileDialog
+        {
+            Filter = "DoWell Files (*.dwl)|*.dwl|JSON Files (*.json)|*.json",
+            DefaultExt = ".dwl",
+            FileName = CurrentWorkbook?.Name?.Replace(" ", "_") ?? "Workbook"
+        };
+
+        if (saveDialog.ShowDialog() == true)
+        {
+            SaveWorkbookToFile(saveDialog.FileName);
+            _currentFilePath = saveDialog.FileName;
+            _hasUnsavedChanges = false;
+            SetStatusMessage($"Saved as {Path.GetFileName(saveDialog.FileName)}", true);
+        }
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show($"Error saving workbook: {ex.Message}", "Save Error",
+            MessageBoxButton.OK, MessageBoxImage.Error);
+        SetStatusMessage("Error saving file", false);
+    }
+}
+
+private void SaveWorkbookToFile(string filePath)
+{
+    // First save all changes to database
+    SaveChangesToDatabase();
+
+    // Create export data
+    var exportData = new
+    {
+        Workbook = new
+        {
+            Name = CurrentWorkbook.Name,
+            Author = CurrentWorkbook.Author,
+            CreatedDate = CurrentWorkbook.CreatedDate,
+            LastSavedDate = DateTime.Now
+        },
+        FormatTemplates = _context.FormatTemplates
+            .Where(t => t.WorkbookId == CurrentWorkbook.WorkbookId)
+            .Select(t => new
+            {
+                t.FormatTemplateId,
+                t.Name,
+                t.IsBold,
+                t.IsItalic,
+                t.IsUnderline,
+                t.BackgroundColor,
+                t.ForegroundColor,
+                t.FontFamily,
+                t.FontSize
+            })
+            .ToList(),
+        Cells = _context.Cells
+            .Where(c => c.WorkbookId == CurrentWorkbook.WorkbookId)
+            .Select(c => new
+            {
+                c.Row,
+                c.Column,
+                c.Value,
+                c.IsBold,
+                c.IsItalic,
+                c.IsUnderline,
+                c.BackgroundColor,
+                c.ForegroundColor,
+                c.FormatTemplateId
+            })
+            .ToList(),
+        GridSize = new
+        {
+            Rows = RowCount,
+            Columns = ColumnCount
+        }
+    };
+
+    var options = new JsonSerializerOptions
+    {
+        WriteIndented = true
+    };
+
+    var json = JsonSerializer.Serialize(exportData, options);
+    File.WriteAllText(filePath, json);
+
+    // Update workbook
+    CurrentWorkbook.FilePath = filePath;
+    CurrentWorkbook.LastSavedDate = DateTime.Now;
+    _context.SaveChanges();
+}
+
+private void LoadWorkbookFromFile(string filePath)
+{
+    var json = File.ReadAllText(filePath);
+    using var doc = JsonDocument.Parse(json);
+    var root = doc.RootElement;
+
+    // Clear existing data
+    var existingCells = _context.Cells.Where(c => c.WorkbookId == CurrentWorkbook.WorkbookId).ToList();
+    _context.Cells.RemoveRange(existingCells);
+    
+    var existingTemplates = _context.FormatTemplates.Where(t => t.WorkbookId == CurrentWorkbook.WorkbookId).ToList();
+    _context.FormatTemplates.RemoveRange(existingTemplates);
+    
+    _context.SaveChanges();
+
+    // Load workbook info
+    if (root.TryGetProperty("Workbook", out var workbookElement))
+    {
+        CurrentWorkbook.Name = GetString(workbookElement, "Name") ?? Path.GetFileNameWithoutExtension(filePath);
+        CurrentWorkbook.Author = GetString(workbookElement, "Author") ?? Environment.UserName;
+        CurrentWorkbook.FilePath = filePath;
+        CurrentWorkbook.LastSavedDate = DateTime.Now;
+    }
+
+    // Load grid size
+    if (root.TryGetProperty("GridSize", out var gridSizeElement))
+    {
+        RowCount = GetInt(gridSizeElement, "Rows", 10);
+        ColumnCount = GetInt(gridSizeElement, "Columns", 10);
+    }
+    else
+    {
+        // Default size if not specified
+        RowCount = 10;
+        ColumnCount = 10;
+    }
+
+    // Load format templates
+    var templateIdMap = new Dictionary<int, int>();
+    FormatTemplates.Clear();
+    
+    if (root.TryGetProperty("FormatTemplates", out var templatesElement))
+    {
+        foreach (var templateElement in templatesElement.EnumerateArray())
+        {
+            var oldId = GetInt(templateElement, "FormatTemplateId", 0);
+            var template = new FormatTemplate
+            {
+                Name = GetString(templateElement, "Name") ?? "Style",
+                IsBold = GetBool(templateElement, "IsBold"),
+                IsItalic = GetBool(templateElement, "IsItalic"),
+                IsUnderline = GetBool(templateElement, "IsUnderline"),
+                BackgroundColor = GetString(templateElement, "BackgroundColor") ?? "#FFFFFF",
+                ForegroundColor = GetString(templateElement, "ForegroundColor") ?? "#000000",
+                FontFamily = GetString(templateElement, "FontFamily") ?? "Segoe UI",
+                FontSize = GetDouble(templateElement, "FontSize", 11),
+                WorkbookId = CurrentWorkbook.WorkbookId
+            };
+            
+            _context.FormatTemplates.Add(template);
+            _context.SaveChanges();
+            
+            if (oldId > 0)
+            {
+                templateIdMap[oldId] = template.FormatTemplateId;
+            }
+            FormatTemplates.Add(template);
+        }
+    }
+
+    // Initialize empty grid first
+    GridData.Clear();
+    for (int row = 0; row < RowCount; row++)
+    {
+        var rowData = new ObservableCollection<CellViewModel>();
+        for (int col = 0; col < ColumnCount; col++)
+        {
+            var cell = new Cell
+            {
+                Row = row,
+                Column = col,
+                WorkbookId = CurrentWorkbook.WorkbookId,
+                Value = "",
+                BackgroundColor = "#FFFFFF",
+                ForegroundColor = "#000000"
+            };
+            rowData.Add(new CellViewModel(cell));
+        }
+        GridData.Add(rowData);
+    }
+
+    // Load cells and update grid
+    if (root.TryGetProperty("Cells", out var cellsElement))
+    {
+        foreach (var cellElement in cellsElement.EnumerateArray())
+        {
+            var row = GetInt(cellElement, "Row", 0);
+            var col = GetInt(cellElement, "Column", 0);
+            
+            // Expand grid if necessary
+            while (row >= RowCount)
+            {
+                AddRowCommand.Execute(null);
+            }
+            while (col >= ColumnCount)
+            {
+                AddColumnCommand.Execute(null);
+            }
+            
+            var cell = new Cell
+            {
+                Row = row,
+                Column = col,
+                Value = GetString(cellElement, "Value") ?? "",
+                IsBold = GetBool(cellElement, "IsBold"),
+                IsItalic = GetBool(cellElement, "IsItalic"),
+                IsUnderline = GetBool(cellElement, "IsUnderline"),
+                BackgroundColor = GetString(cellElement, "BackgroundColor") ?? "#FFFFFF",
+                ForegroundColor = GetString(cellElement, "ForegroundColor") ?? "#000000",
+                WorkbookId = CurrentWorkbook.WorkbookId
+            };
+            
+            // Map template ID
+            var oldTemplateId = GetNullableInt(cellElement, "FormatTemplateId");
+            if (oldTemplateId.HasValue && templateIdMap.ContainsKey(oldTemplateId.Value))
+            {
+                cell.FormatTemplateId = templateIdMap[oldTemplateId.Value];
+                cell.FormatTemplate = _context.FormatTemplates.Find(cell.FormatTemplateId);
+            }
+            
+            // Update the grid
+            if (row < GridData.Count && col < GridData[row].Count)
+            {
+                var cellVm = new CellViewModel(cell);
+                GridData[row][col] = cellVm;
+            }
+            
+            _context.Cells.Add(cell);
+        }
+    }
+    
+    _context.SaveChanges();
+    
+    SetStatusMessage($"Opened: {Path.GetFileName(filePath)}", true);
+}
+
+// Update SaveChangesToDatabase to set the unsaved changes flag
+private void SaveChangesToDatabase()
+{
+    if (CurrentWorkbook == null) return;
+
+    foreach (var row in GridData)
+    {
+        foreach (var cellVm in row)
+        {
+            cellVm.UpdateCell();
+            var cell = cellVm.GetCell();
+
+            var existingCell = _context.Cells
+                .FirstOrDefault(c => c.WorkbookId == CurrentWorkbook.WorkbookId
+                    && c.Row == cell.Row && c.Column == cell.Column);
+
+            if (existingCell == null)
+            {
+                if (!string.IsNullOrEmpty(cell.Value) || cell.IsBold || cell.IsItalic ||
+                    cell.IsUnderline || cell.BackgroundColor != "#FFFFFF" || cell.ForegroundColor != "#000000")
+                {
+                    cell.WorkbookId = CurrentWorkbook.WorkbookId;
+                    _context.Cells.Add(cell);
+                }
+            }
+            else
+            {
+                existingCell.Value = cell.Value;
+                existingCell.IsBold = cell.IsBold;
+                existingCell.IsItalic = cell.IsItalic;
+                existingCell.IsUnderline = cell.IsUnderline;
+                existingCell.BackgroundColor = cell.BackgroundColor;
+                existingCell.ForegroundColor = cell.ForegroundColor;
+                existingCell.FormatTemplateId = cell.FormatTemplateId;
+            }
+        }
+    }
+
+    if (CurrentWorkbook != null)
+    {
+        CurrentWorkbook.LastSavedDate = DateTime.Now;
+    }
+    _context.SaveChanges();
+    _hasUnsavedChanges = true; // Mark as having unsaved changes
+}
+
+// Helper methods for JSON parsing
+private string? GetString(JsonElement element, string propertyName)
+{
+    if (element.TryGetProperty(propertyName, out var prop))
+        return prop.GetString();
+    return null;
+}
+
+private bool GetBool(JsonElement element, string propertyName)
+{
+    if (element.TryGetProperty(propertyName, out var prop))
+        return prop.GetBoolean();
+    return false;
+}
+
+private int GetInt(JsonElement element, string propertyName, int defaultValue = 0)
+{
+    if (element.TryGetProperty(propertyName, out var prop))
+        return prop.GetInt32();
+    return defaultValue;
+}
+
+private double GetDouble(JsonElement element, string propertyName, double defaultValue = 0)
+{
+    if (element.TryGetProperty(propertyName, out var prop))
+        return prop.GetDouble();
+    return defaultValue;
+}
+
+private int? GetNullableInt(JsonElement element, string propertyName)
+{
+    if (element.TryGetProperty(propertyName, out var prop) && prop.ValueKind != JsonValueKind.Null)
+        return prop.GetInt32();
+    return null;
+}
+This rewritten implementation:
+
+New Workbook: Properly clears all data, resets the grid to default size, and prompts to save unsaved changes
+Open Workbook: Loads files correctly with proper JSON parsing, handles grid sizing, and prompts for unsaved changes
+Save: Saves to the current file if one exists, otherwise shows Save As dialog
+Save As: Always prompts for a new file location
+Tracks unsaved changes: Prompts user when they might lose work
+Preserves grid size: Saves and loads the grid dimensions
+Properly maps format templates: Maintains template relationships when loading
+
+The file format is cleaner and more reliable, and all operations work together properly.RetryBok goed, help me nu gewoon om alles in een juiste structuur te plaatsen qua folderstructuurEditIk zal je helpen om een goede folder structuur te maken voor je WPF MVVM project. Hier is de aanbevolen structuur:
+Aanbevolen Folder Structuur:
+DoWell/
+│
+├── DoWell.sln
+├── DoWell.csproj
+│
+├── App.xaml
+├── App.xaml.cs
+│
+├── Models/
+│   ├── Cell.cs
+│   ├── FormatTemplate.cs
+│   └── Workbook.cs
+│
+├── ViewModels/
+│   ├── ViewModelBase.cs
+│   ├── MainViewModel.cs
+│   └── CellViewModel.cs
+│
+├── Views/
+│   ├── MainWindow.xaml
+│   ├── MainWindow.xaml.cs
+│   ├── FormatCellDialog.xaml
+│   ├── FormatCellDialog.xaml.cs
+│   ├── InputDialog.xaml
+│   ├── InputDialog.xaml.cs
+│   ├── FindDialog.xaml
+│   └── FindDialog.xaml.cs
+│
+├── Data/
+│   └── DoWellContext.cs
+│
+├── Converters/
+│   ├── BoolToFontWeightConverter.cs
+│   ├── BoolToFontStyleConverter.cs
+│   ├── BoolToTextDecorationConverter.cs
+│   ├── RowNumberConverter.cs
+│   └── SimpleRowNumberConverter.cs
+│
+├── Migrations/
+│   ├── 20250828121817_InitialCreate.cs
+│   ├── 20250828121817_InitialCreate.Designer.cs
+│   └── DoWellContextModelSnapshot.cs
+│
+└── Resources/
+    └── (eventuele icons, images, etc.)
+Stappen om te reorganiseren:
+1. Verplaats MainWindow naar Views folder
+MainWindow.xaml - Update het x:Class attribuut:
+xml<Window x:Class="DoWell.Views.MainWindow"
+MainWindow.xaml.cs - Update de namespace:
+csharpnamespace DoWell.Views
+{
+    public partial class MainWindow : Window
+    {
+        // ... rest van de code
+    }
+}
+App.xaml - Update StartupUri:
+xml<Application x:Class="DoWell.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             StartupUri="Views/MainWindow.xaml">
+2. Maak een aparte Converters folder
+Maak een nieuw bestand Converters/ValueConverters.cs:
+csharpusing System;
+using System.Globalization;
+using System.Windows;
+using System.Windows.Data;
+using System.Windows.Media;
+using DoWell.ViewModels;
+
+namespace DoWell.Converters
+{
+    public class BoolToFontWeightConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            try
+            {
+                return (bool)value ? FontWeights.Bold : FontWeights.Normal;
+            }
+            catch
+            {
+                return FontWeights.Normal;
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return FontWeights.Bold.Equals(value);
+        }
+    }
+
+    public class BoolToFontStyleConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            try
+            {
+                return (bool)value ? FontStyles.Italic : FontStyles.Normal;
+            }
+            catch
+            {
+                return FontStyles.Normal;
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return FontStyles.Italic.Equals(value);
+        }
+    }
+
+    public class BoolToTextDecorationConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            try
+            {
+                return (bool)value ? TextDecorations.Underline : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value != null && ((TextDecorationCollection)value).Count > 0;
+        }
+    }
+
+    public class SimpleRowNumberConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is int rowIndex)
+            {
+                return (rowIndex + 1).ToString();
+            }
+            return "1";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class RowNumberConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            try
+            {
+                if (value is System.Collections.ObjectModel.ObservableCollection<CellViewModel> row && row.Count > 0)
+                {
+                    return (row[0].Row + 1).ToString();
+                }
+                return "1";
+            }
+            catch
+            {
+                return "1";
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+}
+3. Update MainWindow.xaml.cs
+Verwijder de converter classes uit MainWindow.xaml.cs en voeg deze using toe:
+csharpusing DoWell.Converters;
+4. Update MainWindow.xaml voor Converters
+In MainWindow.xaml, voeg de converter namespace toe en declareer ze als resources:
+xml<Window x:Class="DoWell.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:DoWell.ViewModels"
+        xmlns:converters="clr-namespace:DoWell.Converters"
+        mc:Ignorable="d"
+        Title="DoWell - Excel Clone" Height="750" Width="1300"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
+
+    <Window.Resources>
+        <!-- Converters -->
+        <converters:BoolToFontWeightConverter x:Key="BoolToFontWeightConverter"/>
+        <converters:BoolToFontStyleConverter x:Key="BoolToFontStyleConverter"/>
+        <converters:BoolToTextDecorationConverter x:Key="BoolToTextDecorationConverter"/>
+        <converters:SimpleRowNumberConverter x:Key="SimpleRowNumberConverter"/>
+        <converters:RowNumberConverter x:Key="RowNumberConverter"/>
+        
+        <!-- Rest van je resources... -->
+5. Update de DataGrid column creation in MainWindow.xaml.cs
+Update de CreateCellTemplate method om de converters uit resources te gebruiken:
+csharpprivate DataTemplate CreateCellTemplate(int columnIndex)
+{
+    var template = new DataTemplate();
+    var factory = new FrameworkElementFactory(typeof(TextBlock));
+
+    // ... andere bindings ...
+
+    factory.SetBinding(TextBlock.FontWeightProperty, new Binding($"[{columnIndex}].IsBold")
+    {
+        Converter = (IValueConverter)FindResource("BoolToFontWeightConverter"),
+        FallbackValue = FontWeights.Normal,
+        TargetNullValue = FontWeights.Normal
+    });
+
+    // Doe hetzelfde voor andere converters...
+}
+Deze structuur geeft je:
+
+Betere organisatie: Alles staat op de juiste plek
+Makkelijker onderhoud: Je weet waar je moet zoeken
+MVVM compliance: Duidelijke scheiding tussen Models, Views en ViewModels
+Herbruikbaarheid: Converters staan apart en kunnen makkelijk hergebruikt worden
+RetryBgeef de competeEditBgeef de complete createcelltemplate methodsEditHier zijn de complete CreateCellTemplate en CreateCellEditingTemplate methods voor MainWindow.xaml.cs:
+csharpprivate DataTemplate CreateCellTemplate(int columnIndex)
+{
+    var template = new DataTemplate();
+    var factory = new FrameworkElementFactory(typeof(TextBlock));
+
+    // Text binding
+    factory.SetBinding(TextBlock.TextProperty, new Binding($"[{columnIndex}].Value")
+    {
+        FallbackValue = "",
+        TargetNullValue = ""
+    });
+
+    // Background binding
+    factory.SetBinding(TextBlock.BackgroundProperty, new Binding($"[{columnIndex}].BackgroundBrush")
+    {
+        FallbackValue = Brushes.White,
+        TargetNullValue = Brushes.White
+    });
+
+    // Foreground binding
+    factory.SetBinding(TextBlock.ForegroundProperty, new Binding($"[{columnIndex}].ForegroundBrush")
+    {
+        FallbackValue = Brushes.Black,
+        TargetNullValue = Brushes.Black
+    });
+
+    // Bold binding with converter from resources
+    factory.SetBinding(TextBlock.FontWeightProperty, new Binding($"[{columnIndex}].IsBold")
+    {
+        Converter = (IValueConverter)FindResource("BoolToFontWeightConverter"),
+        FallbackValue = FontWeights.Normal,
+        TargetNullValue = FontWeights.Normal
+    });
+
+    // Italic binding with converter from resources
+    factory.SetBinding(TextBlock.FontStyleProperty, new Binding($"[{columnIndex}].IsItalic")
+    {
+        Converter = (IValueConverter)FindResource("BoolToFontStyleConverter"),
+        FallbackValue = FontStyles.Normal,
+        TargetNullValue = FontStyles.Normal
+    });
+
+    // Underline binding with converter from resources
+    factory.SetBinding(TextBlock.TextDecorationsProperty, new Binding($"[{columnIndex}].IsUnderline")
+    {
+        Converter = (IValueConverter)FindResource("BoolToTextDecorationConverter"),
+        FallbackValue = null,
+        TargetNullValue = null
+    });
+
+    // Set padding
+    factory.SetValue(TextBlock.PaddingProperty, new Thickness(2));
+
+    template.VisualTree = factory;
+    return template;
+}
+
+private DataTemplate CreateCellEditingTemplate(int columnIndex)
+{
+    var template = new DataTemplate();
+    var factory = new FrameworkElementFactory(typeof(TextBox));
+
+    // Text binding for editing
+    factory.SetBinding(TextBox.TextProperty, new Binding($"[{columnIndex}].Value")
+    {
+        UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged,
+        Mode = BindingMode.TwoWay,
+        FallbackValue = "",
+        TargetNullValue = ""
+    });
+
+    // Optional: Also bind styling to the TextBox during editing
+    factory.SetBinding(TextBox.BackgroundProperty, new Binding($"[{columnIndex}].BackgroundBrush")
+    {
+        FallbackValue = Brushes.White,
+        TargetNullValue = Brushes.White
+    });
+
+    factory.SetBinding(TextBox.ForegroundProperty, new Binding($"[{columnIndex}].ForegroundBrush")
+    {
+        FallbackValue = Brushes.Black,
+        TargetNullValue = Brushes.Black
+    });
+
+    factory.SetBinding(TextBox.FontWeightProperty, new Binding($"[{columnIndex}].IsBold")
+    {
+        Converter = (IValueConverter)FindResource("BoolToFontWeightConverter"),
+        FallbackValue = FontWeights.Normal,
+        TargetNullValue = FontWeights.Normal
+    });
+
+    factory.SetBinding(TextBox.FontStyleProperty, new Binding($"[{columnIndex}].IsItalic")
+    {
+        Converter = (IValueConverter)FindResource("BoolToFontStyleConverter"),
+        FallbackValue = FontStyles.Normal,
+        TargetNullValue = FontStyles.Normal
+    });
+
+    // Set padding
+    factory.SetValue(TextBox.PaddingProperty, new Thickness(2));
+    factory.SetValue(TextBox.BorderThicknessProperty, new Thickness(0));
+
+    template.VisualTree = factory;
+    return template;
+}
+En hier is de bijgewerkte UpdateDataGridColumns method die deze templates gebruikt:
+csharpprivate void UpdateDataGridColumns()
+{
+    try
+    {
+        if (_viewModel == null || _viewModel.GridData == null || _viewModel.GridData.Count == 0)
+            return;
+
+        MainDataGrid.ItemsSource = null;
+        MainDataGrid.Columns.Clear();
+
+        // Add row header column
+        var rowHeaderColumn = new DataGridTextColumn
+        {
+            Header = "",
+            Width = 40,
+            IsReadOnly = true,
+            Binding = new Binding("[0].Row")
+            {
+                Converter = (IValueConverter)FindResource("SimpleRowNumberConverter")
+            }
+        };
+        MainDataGrid.Columns.Add(rowHeaderColumn);
+
+        // Add data columns
+        for (int col = 0; col < _viewModel.ColumnCount; col++)
+        {
+            var column = new DataGridTemplateColumn
+            {
+                Header = GetColumnName(col),
+                Width = new DataGridLength(100),
+                CellTemplate = CreateCellTemplate(col),
+                CellEditingTemplate = CreateCellEditingTemplate(col)
+            };
+            MainDataGrid.Columns.Add(column);
+        }
+
+        MainDataGrid.ItemsSource = _viewModel.GridData;
+    }
+    catch (Exception ex)
+    {
+        _viewModel.StatusMessage = $"Error updating columns: {ex.Message}";
+        _viewModel.IsStatusSuccess = false;
+    }
+}
+Deze methods gebruiken nu de converters uit de Window.Resources in plaats van nieuwe instanties te maken. Dit is efficiënter en volgt de WPF best practices beter.
