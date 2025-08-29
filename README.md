@@ -1,19 +1,75 @@
-# DoWell
-
-# DoWell - Excel Clone Applicatie
+﻿# DoWell - Excel Clone Applicatie
 
 ## Projectbeschrijving
 DoWell is een vereenvoudigde Microsoft Excel clone applicatie gebouwd met WPF en .NET 8. Het biedt basis spreadsheet functionaliteit inclusief cel bewerking, opmaak, en bestandsbewerkingen.
 
-## Functionaliteiten
-- Cel data bewerking
-- Tekst opmaak (Vet, Cursief, Onderstreept)
-- Achtergrond- en voorgrondkleur aanpassing
-- Opmaak sjablonen voor consistente styling
-- Toevoegen/Verwijderen van rijen en kolommen
-- Opslaan/Laden van werkmap bestanden (.dwl, .json formaten)
-- Zoek functionaliteit
-- Database persistentie met Entity Framework
+## Functionaliteiten en Bediening
+
+### Cel Data Bewerking
+- **Cel selecteren**: Klik op gewenste cel in het grid
+- **Data invoeren**: Typ direct in geselecteerde cel of gebruik de Formula Bar bovenaan
+- **Automatische opslag**: Cel informatie wordt automatisch opgeslagen bij cel wijziging (via `DataGrid_CellEditEnding` event)
+
+### Sortering
+- **Sorteren op rijnummer**: Klik op de kolom header met rijnummers (linkse kolom) om te sorteren op numerieke volgorde
+
+### Tekst Opmaak
+- **Vet**: Gebruik **B** knop in toolbar of **Format > Bold** in menu (Ctrl+B)
+- **Cursief**: Gebruik **I** knop in toolbar of **Format > Italic** in menu (Ctrl+I)  
+- **Onderstreept**: Gebruik **U** knop in toolbar of **Format > Underline** in menu (Ctrl+U)
+- **Geavanceerde opmaak**: Rechtsklik op cel → **"Format Cell..."** voor uitgebreide opmaak dialog
+
+### Kleur Aanpassing
+- **Achtergrondkleur**: Gebruik **BG:** dropdown in toolbar voor directe kleur selectie
+- **Tekstkleur**: Gebruik **FG:** dropdown in toolbar voor tekstkleur wijziging
+- **Kleur preview**: Toolbar dropdowns tonen kleur rechthoekjes met namen voor eenvoudige selectie
+
+### Opmaak Sjablonen
+- **Sjabloon toepassen**: Selecteer sjabloon uit **Templates:** dropdown in toolbar
+- **Nieuw sjabloon maken**: 
+  - Selecteer cel met gewenste opmaak
+  - Klik **➕** knop naast Templates dropdown
+  - Of gebruik **Format > Create Format Template...** in menu
+- **Sjabloon uit context**: Rechtsklik cel → **"Apply Template"**
+
+### Rijen en Kolommen
+- **Rij toevoegen**: **➕ Row** knop in toolbar
+- **Rij verwijderen**: **➖ Row** knop in toolbar (met bevestiging dialog)
+- **Kolom toevoegen**: **➕ Column** knop in toolbar  
+- **Kolom verwijderen**: **➖ Column** knop in toolbar (met bevestiging dialog)
+
+### Bestandsbeheer
+- **Nieuw bestand**: **File > New Workbook** in menu (Ctrl+N)
+- **Openen**: **📁 Open** knop in toolbar of **File > Open...** (Ctrl+O)
+- **Opslaan**: **💾 Save** knop in toolbar of **File > Save** (Ctrl+S)
+- **Opslaan als**: **File > Save As...** in menu (Ctrl+Shift+S)
+- **Ondersteunde formaten**: .dwl (DoWell native), .json
+
+### Zoek Functionaliteit  
+- **Zoeken**: **Edit > Find...** in menu of sneltoets (Ctrl+F)
+- **Zoek opties**: Match case checkbox voor hoofdlettergevoelig zoeken
+- **Zoek navigatie**: "Find Next" knop om door zoekresultaten te bladeren
+
+### Context Menu (Rechtsklik)
+- **Cut/Copy/Paste**: Standaard klembord operaties (Ctrl+X/C/V)
+- **Format Cell...**: Opent geavanceerde opmaak dialog
+- **Clear Contents**: Wist cel inhoud
+- **Apply Template**: Toepassen van geselecteerd sjabloon
+
+### Sneltoetsen
+- **Ctrl+N**: Nieuwe werkmap
+- **Ctrl+O**: Werkmap openen  
+- **Ctrl+S**: Werkmap opslaan
+- **Ctrl+Shift+S**: Opslaan als
+- **Ctrl+B**: Vet maken/ongedaan maken
+- **Ctrl+I**: Cursief maken/ongedaan maken
+- **Ctrl+U**: Onderstrepen/ongedaan maken
+- **Ctrl+F**: Zoek dialog openen
+- **Ctrl+X/C/V**: Knippen/Kopiëren/Plakken
+
+### Status Informatie
+- **Status bar**: Toont werkmap naam, aantal rijen/kolommen, en operatie feedback
+- **Real-time feedback**: Groene/rode status berichten voor geslaagde/mislukte operaties
 
 ## Technologie Stack
 
@@ -121,7 +177,7 @@ De applicatie gebruikt de volgende database tabellen:
 ## Systeemvereisten
 - Windows 10/11
 - .NET 8.0 Runtime
-- SQL Server LocalDB (ge�nstalleerd met Visual Studio)
+- SQL Server LocalDB (geïnstalleerd met Visual Studio)
 - Minimaal 100 MB vrije schijfruimte
 
 ## Installatie & Setup
@@ -131,13 +187,141 @@ De applicatie gebruikt de volgende database tabellen:
 4. Run database migrations (automatisch bij eerste start)
 5. Build en run de applicatie
 
+## Belangrijkste Klassen en Functies
+
+### Core Models (Data Entiteiten)
+
+#### `Cell` Klasse
+**Doel**: Representeert een individuele spreadsheet cel in de database
+**Belangrijkste eigenschappen**:
+- `Row/Column`: Positie van de cel in het grid
+- `Value`: Tekstuele inhoud van de cel
+- `IsBold/IsItalic/IsUnderline`: Boolean waarden voor tekst opmaak
+- `BackgroundColor/ForegroundColor`: Hex kleuren voor cel styling
+- `FormatTemplateId`: Verwijzing naar toegepaste opmaak sjabloon
+- `WorkbookId`: Foreign key naar parent werkmap
+
+#### `Workbook` Klasse
+**Doel**: Representeert een complete spreadsheet werkmap
+**Belangrijkste eigenschappen**:
+- `Name`: Gebruiksvriendelijke naam van de werkmap
+- `Author`: Maker van de werkmap
+- `FilePath`: Locatie waar werkmap is opgeslagen
+- `Cells`: Collectie van alle cellen in de werkmap
+- `FormatTemplates`: Collectie van beschikbare opmaak sjablonen
+
+#### `FormatTemplate` Klasse
+**Doel**: Herbruikbare opmaak configuraties voor cellen
+**Belangrijkste eigenschappen**:
+- `Name`: Gebruiksvriendelijke naam van het sjabloon
+- `FontFamily/FontSize`: Lettertype configuratie
+- `IsBold/IsItalic/IsUnderline`: Tekst styling opties
+- `BackgroundColor/ForegroundColor`: Kleur configuratie
+
+### ViewModels (Presentation Layer)
+
+#### `MainViewModel` Klasse
+**Doel**: Centrale applicatie logica en state management
+**Belangrijkste functies**:
+
+- `LoadWorkbookData()`: Laadt werkmap data uit database naar UI grid
+- `SaveChangesToDatabase()`: Persisteert UI wijzigingen naar database
+- `AddRow()/RemoveRow()`: Dynamisch toevoegen/verwijderen van rijen
+- `AddColumn()/RemoveColumn()`: Dynamisch toevoegen/verwijderen van kolommen
+- `SaveWorkbookToFile()/LoadWorkbookFromFile()`: JSON serialisatie voor bestand I/O
+- `CreateFormatTemplate()`: Maakt nieuwe opmaak sjabloon van geselecteerde cel
+
+**Belangrijkste eigenschappen**:
+- `GridData`: 2D collectie van CellViewModels voor UI binding
+- `SelectedCell`: Momenteel geselecteerde cel voor formatting
+- `CurrentWorkbook`: Actieve werkmap entiteit
+- `FormatTemplates`: Beschikbare opmaak sjablonen
+
+#### `CellViewModel` Klasse
+**Doel**: UI wrapper voor Cell entiteit met WPF binding ondersteuning
+**Belangrijkste functies**:
+- `UpdateCell()`: Synchroniseert ViewModel wijzigingen naar Model
+- `ToggleBold()/ToggleItalic()/ToggleUnderline()`: Tekst opmaak commando's
+- `SetBackgroundColor()/SetForegroundColor()`: Kleur wijziging commando's
+- `ApplyTemplate()`: Past FormatTemplate toe op cel
+- `GetBrushFromHex()`: Converteert hex kleuren naar WPF Brush objecten
+
+### Data Access Layer
+
+#### `DoWellContext` Klasse (Entity Framework DbContext)
+**Doel**: Database toegang en entiteit configuratie
+**Belangrijkste functies**:
+- `OnConfiguring()`: Configureert SQL Server LocalDB connectie
+- `OnModelCreating()`: Definieert entiteit relaties en constraints
+- Seed data voor initial werkmap en format templates
+
+**Database Relaties**:
+- Workbook 1:N Cells (Cascade delete)
+- Workbook 1:N FormatTemplates (Cascade delete)
+- FormatTemplate 1:N Cells (No action delete - voorkomt cyclische deletes)
+- Unique constraint op (WorkbookId, Row, Column) voor cel positie
+
+### UI Components (Views)
+
+#### `MainWindow` Klasse
+**Doel**: Hoofd applicatie interface met spreadsheet grid
+**Belangrijkste functies**:
+- `UpdateDataGridColumns()`: Dynamisch genereren van DataGrid kolommen
+- `CreateCellTemplate()`: WPF DataTemplate voor cel weergave met styling
+- `CreateCellEditingTemplate()`: WPF DataTemplate voor cel bewerking
+- `DataGrid_SelectedCellsChanged()`: Synchroniseert cel selectie met ViewModel
+- Event handlers voor toolbar acties (Bold, Italic, Underline, kleuren)
+
+#### Dialog Klassen
+**`FormatCellDialog`**: Geavanceerde cel opmaak interface
+- Tab-based interface voor font styling en cel waarde
+- Real-time preview van opmaak wijzigingen
+- Kleur picker controls met visuele feedback
+
+**`InputDialog`**: Herbruikbare tekst input voor sjabloon namen
+**`FindDialog`**: Zoek functionaliteit door spreadsheet cellen
+
+### Utility Components
+
+#### Value Converters
+**`BoolToFontWeightConverter`**: Converteert `bool IsBold` naar `FontWeight.Bold/Normal`
+**`BoolToFontStyleConverter`**: Converteert `bool IsItalic` naar `FontStyle.Italic/Normal`  
+**`BoolToTextDecorationConverter`**: Converteert `bool IsUnderline` naar TextDecoration
+**`RowNumberConverter`**: Converteert rij index naar Excel-stijl rij nummers (1, 2, 3...)
+
+## Data Flow Architecture
+
+1. **User Input** → UI Events in MainWindow
+2. **UI Events** → RelayCommands in MainViewModel  
+3. **Commands** → Business logic methods in ViewModels
+4. **ViewModels** → Entity updates via CellViewModel.UpdateCell()
+5. **Entities** → Database persistence via DoWellContext.SaveChanges()
+6. **Database** → UI updates via ObservableProperty change notifications
+
+## Key Design Decisions
+
+### MVVM Pattern Implementation
+- **Models**: Pure data entities zonder UI logica
+- **ViewModels**: UI state en commands, Entity Framework interactie
+- **Views**: Alleen XAML binding en event forwarding
+
+### Entity Framework Strategy  
+- **Lazy Loading**: Automatisch laden van gerelateerde entiteiten
+- **Change Tracking**: EF Core detecteert wijzigingen voor optimale database updates
+- **Migrations**: Database schema versioning en deployment
+
+### Performance Optimizations
+- ObservableCollection voor efficiënte UI updates
+- Conditional database saves (alleen bij daadwerkelijke cel wijzigingen)
+- Template-based DataGrid voor geheugen efficiëntie bij grote grids
+
 ## Opmerkingen
 - Het project gebruikt Entity Framework als absolute vereiste voor financiering
 - Alle functionaliteit is beperkt gehouden tot de gespecificeerde requirements
 - CommunityToolkit.Mvvm wordt gebruikt om code zo compact mogelijk te houden
 - Database migrations worden automatisch uitgevoerd bij opstarten
-
-Gebruikte bronnen:
+- Functionaliteit voor filteren, wijzigen van lettertypen en basisformules zijn nog niet beschikbaar
+- De README.md werd deels gegenereerd door Claude AI
 
 AI werd gebruikt voor probleemoplossing, bugfixes, algemene hulp bij het programmeren en integratie van functies in de code
 

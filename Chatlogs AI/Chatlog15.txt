@@ -20,4 +20,43 @@ Gebruikte ontwikkeltools
 Externe bronnen en referenties
 Systeemvereisten en installatie-instructies
 
-Deze README voldoet aan de eis voor een lijst van alle geraadpleegde bronnen en gebruikte libraries/frameworks voor je software project inzending.
+Deze README voldoet aan de eis voor een lijst van alle geraadpleegde bronnen en gebruikte libraries/frameworks voor je software project inzending.RetryBvoldoet het aan deze eis Softwareprojecten zijn gedocumenteerd met uitleg over je belangrijkste functies en objecten zodat het duidelijk is wat alles doet.Edit2 / 2De huidige README voldoet nog niet volledig aan die eis. Ik ga hem uitbreiden met gedetailleerde uitleg over de belangrijkste functies en objecten:DoWell Project READMEDocument ∙ Version 3 ## Belangrijkste Klassen en Functies
+
+### Core Models (Data Entiteiten)
+
+#### `Cell` Klasse
+**Doel**: Representeert een individuele spreadsheet cel in de database
+**Belangrijkste eigenschappen**:
+- `Row/Column`: Positie van de cel in het grid
+- `ValuNu voldoet de README wel aan de eis! Ik heb een uitgebreide sectie "Belangrijkste Klassen en Functies" toegevoegd die in detail uitlegt:
+
+Core Models - Wat elke data entiteit doet en bevat
+ViewModels - Belangrijkste functies en eigenschappen van de presentation layer
+Data Access Layer - Hoe Entity Framework wordt gebruikt
+UI Components - Wat elke view doet en belangrijkste UI functies
+Utility Components - Converters en helper klassen
+Data Flow Architecture - Hoe data door de applicatie stroomt
+Key Design Decisions - Architecturale keuzes en optimalisaties
+
+Voor elke klasse en functie wordt duidelijk uitgelegd:
+
+Doel: Wat het doet
+Belangrijkste eigenschappen/functies: Specifieke functionaliteit
+Relaties: Hoe objecten met elkaar interacteren
+
+Dit geeft een complete documentatie van je software architectuur zodat iedereen begrijpt wat alle onderdelen doen.RetryBvermeld dat sorteren op nummer mogelijk is door de kolom met de rijnummers bovenaan te drukken, opmaak mogelijk is met ... knoppen in het menu, gegevens  en bestanden mogelijk is met knoppen en automatische opslag van cel informatie, wijzigen van kleuren en zoekfunctie mogelijk met de knoppen, zelfde voor rijen en kolommen toevoegen, sjabloon maken via de knop, kortom alles wat mogelijk is uitleggen waarmee (bv knop in het menuEditDoWell Project READMEDocument ∙ Version 4 ## Functionaliteiten en Bediening
+
+### Cel Data Bewerking
+- **Cel selecteren**: Klik op gewenste cel in het grid
+- **Data invoeren**: Typ direct in geselecteerde cel of gebruik de Formula Bar bovenaan
+- **Automatische opslag**: Cel informatie wordt aPerfect! Nu heb ik een uitgebreide sectie "Functionaliteiten en Bediening" toegevoegd die precies uitlegt hoe elke functie te gebruiken is:
+
+Waar elke knop staat (toolbar, menu, context menu)
+Welke sneltoetsen beschikbaar zijn
+Hoe automatische functies werken (zoals automatische opslag)
+Specifieke bediening (zoals sorteren door op rijnummer kolom te klikken)
+Alle interactie methoden (knoppen, menu's, rechtsklik, sneltoetsen)
+Bestandsformaten en dialogs
+Status feedback voor gebruiker
+
+Deze documentatie maakt het nu kristalhelder voor iedereen hoe ze alle functionaliteiten kunnen gebruiken en met welke specifieke UI elementen (knoppen, menu items, etc.) ze dat kunnen doen.
