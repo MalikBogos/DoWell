@@ -62,6 +62,7 @@
                 <MenuItem Header="_New Workbook" Command="{Binding NewWorkbookCommand}" InputGestureText="Ctrl+N"/>
                 <MenuItem Header="_Open..." Command="{Binding OpenWorkbookCommand}" InputGestureText="Ctrl+O"/>
                 <MenuItem Header="_Save" Command="{Binding SaveWorkbookCommand}" InputGestureText="Ctrl+S"/>
+                <MenuItem Header="Save _As..." Command="{Binding SaveAsCommand}" InputGestureText="Ctrl+Shift+S"/>
                 <Separator/>
                 <MenuItem Header="E_xit" Click="Exit_Click"/>
             </MenuItem>
@@ -70,7 +71,7 @@
                 <MenuItem Header="_Copy" Command="ApplicationCommands.Copy" InputGestureText="Ctrl+C"/>
                 <MenuItem Header="_Paste" Command="ApplicationCommands.Paste" InputGestureText="Ctrl+V"/>
                 <Separator/>
-                <MenuItem Header="_Find..." InputGestureText="Ctrl+F"/>
+                <MenuItem Header="_Find..." Command="{Binding FindCommand}" InputGestureText="Ctrl+F"/>
             </MenuItem>
             <MenuItem Header="_Format">
                 <MenuItem Header="_Bold" x:Name="MenuBold" Click="BoldButton_Click" InputGestureText="Ctrl+B"/>

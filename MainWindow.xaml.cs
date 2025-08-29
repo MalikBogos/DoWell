@@ -1,16 +1,17 @@
 ﻿// MainWindow.xaml.cs
+using DoWell.Data;
+using DoWell.Models;
+using DoWell.ViewModels;
+using DoWell.Views;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
-using DoWell.Data;
-using DoWell.Models;
-using DoWell.ViewModels;
-using DoWell.Views;
-using Microsoft.EntityFrameworkCore;
 
 namespace DoWell
 {
@@ -18,10 +19,19 @@ namespace DoWell
     {
         private MainViewModel _viewModel = null!;
 
+        // Replace the constructor in MainWindow.xaml.cs with:
         public MainWindow()
         {
             InitializeComponent();
             _viewModel = (MainViewModel)DataContext;
+
+            // Add keyboard shortcuts after _viewModel is initialized
+            if (_viewModel != null)
+            {
+                InputBindings.Add(new KeyBinding(_viewModel.FindCommand, Key.F, ModifierKeys.Control));
+                InputBindings.Add(new KeyBinding(_viewModel.SaveAsCommand, Key.S, ModifierKeys.Control | ModifierKeys.Shift));
+            }
+
             Loaded += MainWindow_Loaded;
         }
 

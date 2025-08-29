@@ -51,6 +51,141 @@ namespace DoWell.ViewModels
 
         public event EventHandler? ColumnsChanged;
 
+        // Add this field at the top of the class with other fields
+        private string? _lastSaveFilePath;
+
+        // Add these commands
+        [RelayCommand]
+        private void Find()
+        {
+            var findDialog = new FindDialog(this);
+            findDialog.ShowDialog();
+        }
+
+        [RelayCommand]
+        private void SaveAs()
+        {
+            SaveWorkbookAs();
+        }
+
+        // Modify the existing SaveWorkbook method to:
+        [RelayCommand]
+        private void SaveWorkbook()
+        {
+            if (!string.IsNullOrEmpty(_lastSaveFilePath))
+            {
+                // If we have a previous save location, save there directly
+                SaveToFile(_lastSaveFilePath);
+            }
+            else
+            {
+                // Otherwise show Save As dialog
+                SaveWorkbookAs();
+            }
+        }
+
+        // Add new SaveWorkbookAs method:
+        private void SaveWorkbookAs()
+        {
+            try
+            {
+                var saveDialog = new SaveFileDialog
+                {
+                    Filter = "DoWell Files (*.dwl)|*.dwl|JSON Files (*.json)|*.json",
+                    DefaultExt = ".dwl",
+                    FileName = CurrentWorkbook?.Name ?? "Workbook"
+                };
+
+                if (saveDialog.ShowDialog() == true)
+                {
+                    SaveToFile(saveDialog.FileName);
+                    _lastSaveFilePath = saveDialog.FileName;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saving workbook: {ex.Message}", "Save Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                SetStatusMessage($"Error saving workbook: {ex.Message}", false);
+            }
+        }
+
+        // Add helper method for actual saving:
+        private void SaveToFile(string filePath)
+        {
+            try
+            {
+                SaveChangesToDatabase();
+
+                var exportData = new
+                {
+                    Workbook = new
+                    {
+                        CurrentWorkbook.WorkbookId,
+                        CurrentWorkbook.Name,
+                        CurrentWorkbook.Author,
+                        CurrentWorkbook.CreatedDate,
+                        CurrentWorkbook.LastSavedDate
+                    },
+                    Cells = _context.Cells
+                        .Where(c => c.WorkbookId == CurrentWorkbook!.WorkbookId)
+                        .Select(c => new
+                        {
+                            c.CellId,
+                            c.Row,
+                            c.Column,
+                            c.Value,
+                            c.IsBold,
+                            c.IsItalic,
+                            c.IsUnderline,
+                            c.BackgroundColor,
+                            c.ForegroundColor,
+                            c.WorkbookId,
+                            c.FormatTemplateId
+                        })
+                        .ToList(),
+                    Templates = _context.FormatTemplates
+                        .Where(ft => ft.WorkbookId == CurrentWorkbook!.WorkbookId)
+                        .Select(ft => new
+                        {
+                            ft.FormatTemplateId,
+                            ft.Name,
+                            ft.IsBold,
+                            ft.IsItalic,
+                            ft.IsUnderline,
+                            ft.BackgroundColor,
+                            ft.ForegroundColor,
+                            ft.FontFamily,
+                            ft.FontSize,
+                            ft.WorkbookId
+                        })
+                        .ToList()
+                };
+
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
+                };
+
+                var json = JsonSerializer.Serialize(exportData, options);
+                File.WriteAllText(filePath, json);
+
+                if (CurrentWorkbook != null)
+                {
+                    CurrentWorkbook.FilePath = filePath;
+                    CurrentWorkbook.LastSavedDate = DateTime.Now;
+                    _context.SaveChanges();
+                }
+
+                SetStatusMessage($"Workbook saved to {Path.GetFileName(filePath)}", true);
+            }
+            catch (Exception ex)
+            {
+                throw; // Re-throw to be caught by calling method
+            }
+        }
+
         public MainViewModel()
         {
             _context = new DoWellContext();
@@ -173,32 +308,32 @@ namespace DoWell.ViewModels
             }
         }
 
-        [RelayCommand]
-        private void NewWorkbook()
-        {
-            try
-            {
-                var result = MessageBox.Show("Save current workbook before creating new?",
-                    "New Workbook", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+        //[RelayCommand]
+        //private void NewWorkbook()
+        //{
+        //    try
+        //    {
+        //        var result = MessageBox.Show("Save current workbook before creating new?",
+        //            "New Workbook", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
 
-                if (result == MessageBoxResult.Yes)
-                {
-                    SaveWorkbook();
-                }
-                else if (result == MessageBoxResult.Cancel)
-                {
-                    return;
-                }
+        //        if (result == MessageBoxResult.Yes)
+        //        {
+        //            SaveWorkbook();
+        //        }
+        //        else if (result == MessageBoxResult.Cancel)
+        //        {
+        //            return;
+        //        }
 
-                CurrentWorkbook = CreateNewWorkbook();
-                InitializeWorkbook();
-                SetStatusMessage("New workbook created", true);
-            }
-            catch (Exception ex)
-            {
-                SetStatusMessage($"Error creating new workbook: {ex.Message}", false);
-            }
-        }
+        //        CurrentWorkbook = CreateNewWorkbook();
+        //        InitializeWorkbook();
+        //        SetStatusMessage("New workbook created", true);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        SetStatusMessage($"Error creating new workbook: {ex.Message}", false);
+        //    }
+        //}
 
         [RelayCommand]
         private void AddRow()
@@ -406,141 +541,141 @@ namespace DoWell.ViewModels
             }
         }
 
-        [RelayCommand]
-        private void SaveWorkbook()
-        {
-            try
-            {
-                var saveDialog = new SaveFileDialog
-                {
-                    Filter = "DoWell Files (*.dwl)|*.dwl|JSON Files (*.json)|*.json",
-                    DefaultExt = ".dwl",
-                    FileName = CurrentWorkbook?.Name ?? "Workbook"
-                };
+        //[RelayCommand]
+        //private void SaveWorkbook()
+        //{
+        //    try
+        //    {
+        //        var saveDialog = new SaveFileDialog
+        //        {
+        //            Filter = "DoWell Files (*.dwl)|*.dwl|JSON Files (*.json)|*.json",
+        //            DefaultExt = ".dwl",
+        //            FileName = CurrentWorkbook?.Name ?? "Workbook"
+        //        };
 
-                if (saveDialog.ShowDialog() == true)
-                {
-                    SaveChangesToDatabase();
+        //        if (saveDialog.ShowDialog() == true)
+        //        {
+        //            SaveChangesToDatabase();
 
-                    var exportData = new
-                    {
-                        Workbook = new
-                        {
-                            CurrentWorkbook.WorkbookId,
-                            CurrentWorkbook.Name,
-                            CurrentWorkbook.Author,
-                            CurrentWorkbook.CreatedDate,
-                            CurrentWorkbook.LastSavedDate
-                        },
-                        Cells = _context.Cells
-                            .Where(c => c.WorkbookId == CurrentWorkbook!.WorkbookId)
-                            .Select(c => new
-                            {
-                                c.CellId,
-                                c.Row,
-                                c.Column,
-                                c.Value,
-                                c.IsBold,
-                                c.IsItalic,
-                                c.IsUnderline,
-                                c.BackgroundColor,
-                                c.ForegroundColor,
-                                c.WorkbookId,
-                                c.FormatTemplateId
-                            })
-                            .ToList(),
-                        Templates = _context.FormatTemplates
-                            .Where(ft => ft.WorkbookId == CurrentWorkbook!.WorkbookId)
-                            .Select(ft => new
-                            {
-                                ft.FormatTemplateId,
-                                ft.Name,
-                                ft.IsBold,
-                                ft.IsItalic,
-                                ft.IsUnderline,
-                                ft.BackgroundColor,
-                                ft.ForegroundColor,
-                                ft.FontFamily,
-                                ft.FontSize,
-                                ft.WorkbookId
-                            })
-                            .ToList()
-                    };
+        //            var exportData = new
+        //            {
+        //                Workbook = new
+        //                {
+        //                    CurrentWorkbook.WorkbookId,
+        //                    CurrentWorkbook.Name,
+        //                    CurrentWorkbook.Author,
+        //                    CurrentWorkbook.CreatedDate,
+        //                    CurrentWorkbook.LastSavedDate
+        //                },
+        //                Cells = _context.Cells
+        //                    .Where(c => c.WorkbookId == CurrentWorkbook!.WorkbookId)
+        //                    .Select(c => new
+        //                    {
+        //                        c.CellId,
+        //                        c.Row,
+        //                        c.Column,
+        //                        c.Value,
+        //                        c.IsBold,
+        //                        c.IsItalic,
+        //                        c.IsUnderline,
+        //                        c.BackgroundColor,
+        //                        c.ForegroundColor,
+        //                        c.WorkbookId,
+        //                        c.FormatTemplateId
+        //                    })
+        //                    .ToList(),
+        //                Templates = _context.FormatTemplates
+        //                    .Where(ft => ft.WorkbookId == CurrentWorkbook!.WorkbookId)
+        //                    .Select(ft => new
+        //                    {
+        //                        ft.FormatTemplateId,
+        //                        ft.Name,
+        //                        ft.IsBold,
+        //                        ft.IsItalic,
+        //                        ft.IsUnderline,
+        //                        ft.BackgroundColor,
+        //                        ft.ForegroundColor,
+        //                        ft.FontFamily,
+        //                        ft.FontSize,
+        //                        ft.WorkbookId
+        //                    })
+        //                    .ToList()
+        //            };
 
-                    var options = new JsonSerializerOptions
-                    {
-                        WriteIndented = true,
-                        ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
-                    };
+        //            var options = new JsonSerializerOptions
+        //            {
+        //                WriteIndented = true,
+        //                ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
+        //            };
 
-                    var json = JsonSerializer.Serialize(exportData, options);
-                    File.WriteAllText(saveDialog.FileName, json);
+        //            var json = JsonSerializer.Serialize(exportData, options);
+        //            File.WriteAllText(saveDialog.FileName, json);
 
-                    if (CurrentWorkbook != null)
-                    {
-                        CurrentWorkbook.FilePath = saveDialog.FileName;
-                        CurrentWorkbook.LastSavedDate = DateTime.Now;
-                        _context.SaveChanges();
-                    }
+        //            if (CurrentWorkbook != null)
+        //            {
+        //                CurrentWorkbook.FilePath = saveDialog.FileName;
+        //                CurrentWorkbook.LastSavedDate = DateTime.Now;
+        //                _context.SaveChanges();
+        //            }
 
-                    SetStatusMessage($"Workbook saved to {saveDialog.FileName}", true);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error saving workbook: {ex.Message}", "Save Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                SetStatusMessage($"Error saving workbook: {ex.Message}", false);
-            }
-        }
+        //            SetStatusMessage($"Workbook saved to {saveDialog.FileName}", true);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"Error saving workbook: {ex.Message}", "Save Error",
+        //            MessageBoxButton.OK, MessageBoxImage.Error);
+        //        SetStatusMessage($"Error saving workbook: {ex.Message}", false);
+        //    }
+        //}
 
-        [RelayCommand]
-        private void OpenWorkbook()
-        {
-            try
-            {
-                var openDialog = new OpenFileDialog
-                {
-                    Filter = "DoWell Files (*.dwl)|*.dwl|JSON Files (*.json)|*.json",
-                    DefaultExt = ".dwl"
-                };
+        //[RelayCommand]
+        //private void OpenWorkbook()
+        //{
+        //    try
+        //    {
+        //        var openDialog = new OpenFileDialog
+        //        {
+        //            Filter = "DoWell Files (*.dwl)|*.dwl|JSON Files (*.json)|*.json",
+        //            DefaultExt = ".dwl"
+        //        };
 
-                if (openDialog.ShowDialog() == true)
-                {
-                    var result = MessageBox.Show(
-                        "This will replace the current workbook. Save changes first?",
-                        "Open Workbook",
-                        MessageBoxButton.YesNoCancel,
-                        MessageBoxImage.Question);
+        //        if (openDialog.ShowDialog() == true)
+        //        {
+        //            var result = MessageBox.Show(
+        //                "This will replace the current workbook. Save changes first?",
+        //                "Open Workbook",
+        //                MessageBoxButton.YesNoCancel,
+        //                MessageBoxImage.Question);
 
-                    if (result == MessageBoxResult.Yes)
-                    {
-                        SaveWorkbook();
-                    }
-                    else if (result == MessageBoxResult.Cancel)
-                    {
-                        return;
-                    }
+        //            if (result == MessageBoxResult.Yes)
+        //            {
+        //                SaveWorkbook();
+        //            }
+        //            else if (result == MessageBoxResult.Cancel)
+        //            {
+        //                return;
+        //            }
 
-                    var json = File.ReadAllText(openDialog.FileName);
+        //            var json = File.ReadAllText(openDialog.FileName);
 
-                    MessageBox.Show(
-                        $"File opened successfully!\n\nFile: {Path.GetFileName(openDialog.FileName)}\n\n" +
-                        "Note: Full import functionality would deserialize the JSON and load it into the database.",
-                        "Open File",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+        //            MessageBox.Show(
+        //                $"File opened successfully!\n\nFile: {Path.GetFileName(openDialog.FileName)}\n\n" +
+        //                "Note: Full import functionality would deserialize the JSON and load it into the database.",
+        //                "Open File",
+        //                MessageBoxButton.OK,
+        //                MessageBoxImage.Information);
 
-                    SetStatusMessage($"Opened: {openDialog.FileName}", true);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error opening workbook: {ex.Message}", "Open Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                SetStatusMessage($"Error opening workbook: {ex.Message}", false);
-            }
-        }
+        //            SetStatusMessage($"Opened: {openDialog.FileName}", true);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"Error opening workbook: {ex.Message}", "Open Error",
+        //            MessageBoxButton.OK, MessageBoxImage.Error);
+        //        SetStatusMessage($"Error opening workbook: {ex.Message}", false);
+        //    }
+        //}
 
         [RelayCommand]
         private void ApplyFormatTemplate(FormatTemplate template)
