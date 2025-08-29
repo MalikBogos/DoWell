@@ -61,6 +61,9 @@ De volgende NuGet packages worden gebruikt in dit project (zoals gedefinieerd in
 
 ## Project Structuur
 
+### Chatlogs AI
+- Chatlogs van Claude AI assistentie voor probleemoplossing en feature integratie
+
 ### Models
 - `Cell.cs` - Entiteit voor spreadsheet cellen
 - `Workbook.cs` - Entiteit voor werkmap
